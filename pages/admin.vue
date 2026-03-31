@@ -57,49 +57,79 @@
       </section>
 
       <section class="border-b pb-6">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-3">
           <h3 class="text-xl font-semibold">外部網站保活與捷徑設定</h3>
-          <button 
-            @click="pingAllUrls" 
-            :disabled="isPinging || keepAliveUrls.length === 0"
-            class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50 transition duration-200 flex items-center gap-2 shadow-sm"
-          >
-            <span>{{ isPinging ? '喚醒中...' : '一鍵喚醒全部' }}</span>
-          </button>
+          
+          <div class="flex gap-2">
+            <button 
+              @click="pingUrlsByPlatform('Vercel')" 
+              :disabled="isPinging"
+              class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50 transition duration-200 flex items-center shadow-sm text-sm"
+            >
+              <span v-if="isPingingPlatform === 'Vercel'" class="animate-pulse">⏳ Vercel 喚醒中...</span>
+              <span v-else>🚀 喚醒所有 Vercel</span>
+            </button>
+            <button 
+              @click="pingUrlsByPlatform('Render')" 
+              :disabled="isPinging"
+              class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50 transition duration-200 flex items-center shadow-sm text-sm"
+            >
+              <span v-if="isPingingPlatform === 'Render'" class="animate-pulse">⏳ Render 喚醒中...</span>
+              <span v-else>🛸 喚醒所有 Render</span>
+            </button>
+          </div>
         </div>
         
         <p v-if="pingResult" class="text-green-600 text-sm mb-3 font-medium">{{ pingResult }}</p>
 
-        <div class="flex flex-col md:flex-row gap-2 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-          <input v-model="newKeepAlive.name" type="text" placeholder="網站名稱 (必填)" class="border border-gray-300 p-2 md:w-1/4 rounded text-sm focus:ring-blue-500">
+        <div class="flex flex-col md:flex-row gap-2 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <select v-model="newKeepAlive.platform" class="border border-gray-300 p-2 rounded text-sm focus:ring-blue-500 bg-white">
+            <option value="Vercel">Vercel 專案</option>
+            <option value="Render">Render 專案</option>
+          </select>
+          <input v-model="newKeepAlive.name" type="text" placeholder="網站名稱" class="border border-gray-300 p-2 w-full md:w-32 rounded text-sm focus:ring-blue-500">
           <input v-model="newKeepAlive.url" type="url" placeholder="喚醒 API 網址 (必填)" class="border border-gray-300 p-2 flex-1 rounded text-sm focus:ring-blue-500">
           <input v-model="newKeepAlive.home_url" type="url" placeholder="真正首頁網址 (選填)" class="border border-gray-300 p-2 flex-1 rounded text-sm focus:ring-blue-500">
-          <button @click="addKeepAliveUrl" class="bg-gray-800 text-white px-5 py-2 rounded hover:bg-gray-900 text-sm font-medium whitespace-nowrap transition-colors">
+          <button @click="addKeepAliveUrl" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm font-medium whitespace-nowrap transition-colors">
             新增網站
           </button>
         </div>
 
-        <ul class="space-y-3">
-          <li v-for="item in keepAliveUrls" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex flex-col mb-2 md:mb-0">
-              <span class="font-bold text-gray-800 text-lg">{{ item.name }}</span>
-              <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded truncate max-w-xs md:max-w-md" title="喚醒用 API">
-                  ⚡ API: {{ item.url }}
-                </span>
-                <a v-if="item.home_url" :href="item.home_url" target="_blank" class="inline-flex items-center justify-center text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md transition-colors w-fit">
-                  🔗 開啟首頁
-                </a>
-              </div>
-            </div>
-            <button @click="deleteKeepAliveUrl(item.id)" class="text-red-500 hover:text-white hover:bg-red-500 border border-transparent hover:border-red-600 text-sm px-3 py-1 rounded transition-colors self-end md:self-auto mt-2 md:mt-0">
-              刪除
-            </button>
-          </li>
-          <li v-if="keepAliveUrls.length === 0" class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-            尚未加入任何網站，請在上方輸入框新增。
-          </li>
-        </ul>
+        <div class="space-y-6">
+          <div>
+            <h4 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider">▲ Vercel 專案</h4>
+            <ul class="space-y-2">
+              <li v-for="item in vercelUrls" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border-l-4 border-l-gray-800 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex flex-col mb-2 md:mb-0">
+                  <span class="font-bold text-gray-800">{{ item.name }}</span>
+                  <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded truncate max-w-xs md:max-w-md" title="喚醒用 API">⚡ API: {{ item.url }}</span>
+                    <a v-if="item.home_url" :href="item.home_url" target="_blank" class="inline-flex items-center justify-center text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md transition-colors w-fit">🔗 開啟首頁</a>
+                  </div>
+                </div>
+                <button @click="deleteKeepAliveUrl(item.id)" class="text-red-500 hover:text-white hover:bg-red-500 border border-transparent hover:border-red-600 text-sm px-3 py-1 rounded transition-colors self-end md:self-auto mt-2 md:mt-0">刪除</button>
+              </li>
+              <li v-if="vercelUrls.length === 0" class="text-sm text-gray-400 py-2 bg-gray-50 text-center rounded border border-dashed border-gray-300">目前沒有 Vercel 專案。</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-purple-500 mb-2 uppercase tracking-wider">◆ Render 專案</h4>
+            <ul class="space-y-2">
+              <li v-for="item in renderUrls" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border-l-4 border-l-purple-500 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex flex-col mb-2 md:mb-0">
+                  <span class="font-bold text-gray-800">{{ item.name }}</span>
+                  <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded truncate max-w-xs md:max-w-md" title="喚醒用 API">⚡ API: {{ item.url }}</span>
+                    <a v-if="item.home_url" :href="item.home_url" target="_blank" class="inline-flex items-center justify-center text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md transition-colors w-fit">🔗 開啟首頁</a>
+                  </div>
+                </div>
+                <button @click="deleteKeepAliveUrl(item.id)" class="text-red-500 hover:text-white hover:bg-red-500 border border-transparent hover:border-red-600 text-sm px-3 py-1 rounded transition-colors self-end md:self-auto mt-2 md:mt-0">刪除</button>
+              </li>
+              <li v-if="renderUrls.length === 0" class="text-sm text-gray-400 py-2 bg-gray-50 text-center rounded border border-dashed border-gray-300">目前沒有 Render 專案。</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section>
@@ -137,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { getTodayPassword } from '@/utils/auth'
 
 const dayjs = useDayjs()
@@ -153,11 +183,16 @@ const marqueeText = ref('')
 const newPost = ref({ title: '', description: '', url: '' })
 const visitorLogs = ref([])
 
-// 保活功能與捷徑變數 (加入 home_url)
+// 保活功能與捷徑變數
 const keepAliveUrls = ref([])
-const newKeepAlive = ref({ name: '', url: '', home_url: '' })
+const newKeepAlive = ref({ name: '', url: '', home_url: '', platform: 'Vercel' }) // 預設為 Vercel
 const isPinging = ref(false)
+const isPingingPlatform = ref('') // 紀錄目前正在喚醒哪一個平台
 const pingResult = ref('')
+
+// 利用 computed 自動分類兩個平台的網址
+const vercelUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Vercel' || !item.platform))
+const renderUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Render'))
 
 // ====== 核心功能 ======
 
@@ -227,7 +262,7 @@ const addKeepAliveUrl = async () => {
   }
   
   await supabase.from('keep_alive_urls').insert([{ ...newKeepAlive.value }])
-  newKeepAlive.value = { name: '', url: '', home_url: '' }
+  newKeepAlive.value = { name: '', url: '', home_url: '', platform: 'Vercel' } // 清空表單並恢復預設
   loadKeepAliveUrls()
 }
 
@@ -238,19 +273,26 @@ const deleteKeepAliveUrl = async (id) => {
   loadKeepAliveUrls()
 }
 
-// 一鍵喚醒邏輯
-const pingAllUrls = async () => {
-  if (keepAliveUrls.value.length === 0) return
+// 緩解 CPU 壓力的延遲輔助函數
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// 循序且分類的喚醒邏輯 (修復 CPU 飆高問題)
+const pingUrlsByPlatform = async (platform) => {
+  const targetUrls = platform === 'Vercel' ? vercelUrls.value : renderUrls.value
+  
+  if (targetUrls.length === 0) return
+  
   isPinging.value = true
+  isPingingPlatform.value = platform
   pingResult.value = ''
   
   let successCount = 0
 
-  // 平行發送請求
-  await Promise.allSettled(keepAliveUrls.value.map(async (item) => {
+  // 放棄 Promise.allSettled，改用 for...of 迴圈「循序」發送，並且每次發送完休息 300 毫秒
+  for (const item of targetUrls) {
     try {
       const urlObj = new URL(item.url)
-      // 加上隨機時間戳，確保繞過 Vercel CDN 快取，強制觸發伺服器與資料庫讀取
+      // 加上隨機時間戳，確保繞過 Vercel/Render CDN 快取，強制觸發伺服器與資料庫讀取
       urlObj.searchParams.append('_ping_ts', Date.now().toString())
       
       // 使用 no-cors 模式，即使對方沒有設 CORS headers 也能成功把請求發出去
@@ -260,17 +302,22 @@ const pingAllUrls = async () => {
         cache: 'no-store' 
       })
       successCount++
+      
+      // 休息 0.3 秒，避免瀏覽器瞬間發出太多請求導致 CPU 與記憶體飆高
+      await delay(300) 
+      
     } catch (error) {
       console.error(`喚醒 ${item.name} 失敗:`, error)
     }
-  }))
+  }
 
   isPinging.value = false
-  pingResult.value = `喚醒完成！成功發送 ${successCount}/${keepAliveUrls.value.length} 個請求。`
+  isPingingPlatform.value = ''
+  pingResult.value = `${platform} 喚醒完成！成功發送 ${successCount}/${targetUrls.length} 個請求。`
   
-  // 3秒後清除提示
+  // 4秒後清除提示
   setTimeout(() => {
     pingResult.value = ''
-  }, 3000)
+  }, 4000)
 }
 </script>
