@@ -19,21 +19,41 @@
     </div>
 
     <div v-if="filteredBulletins.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
-      <a 
+      <div 
         v-for="item in filteredBulletins" 
         :key="item.id" 
-        :href="item.url" 
-        target="_blank"
-        :class="['block p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition duration-300 group hover:border-transparent']"
+        :class="[
+          'relative p-6 rounded-xl shadow-sm hover:shadow-md transition duration-300 group flex flex-col h-full',
+          item.is_important ? `bg-red-50 border-2 border-red-400` : 'bg-white border border-gray-200'
+        ]"
       >
-        <div class="flex justify-between items-start mb-2">
-          <h5 :class="['text-xl font-bold tracking-tight text-gray-900 transition-colors duration-300', themeObj.hoverText]">{{ item.title }}</h5>
+        <div class="absolute -top-3 -right-2 flex gap-1">
+          <span v-if="item.is_pinned" class="bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-full shadow">📌 置頂</span>
+          <span v-if="item.is_important" class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">🔥 重要</span>
         </div>
-        <p class="font-normal text-gray-600 mt-2">{{ item.description }}</p>
-        <div :class="['mt-4 text-sm font-medium flex items-center gap-1 transition-transform group-hover:translate-x-1 duration-300', themeObj.text]">
-          點擊前往學習 <span aria-hidden="true">&rarr;</span>
+
+        <div class="flex-1">
+          <h5 :class="['text-xl font-bold tracking-tight transition-colors duration-300 mb-2 pr-10', item.is_important ? 'text-red-700' : 'text-gray-900', themeObj.hoverText]">
+            {{ item.title }}
+          </h5>
+          <p class="font-normal text-gray-600 whitespace-pre-line">{{ item.description }}</p>
         </div>
-      </a>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <a :href="item.url" target="_blank" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors']">
+            前往主連結 🚀
+          </a>
+          <a 
+            v-for="(link, index) in item.links || []" 
+            :key="index"
+            :href="link.url" 
+            target="_blank"
+            class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"
+          >
+            {{ link.name || '參考網址' }}
+          </a>
+        </div>
+      </div>
     </div>
 
     <div v-else class="text-center py-16 text-gray-400">
@@ -58,9 +78,17 @@ const { data: bulletins } = await useAsyncData('bulletins', async () => {
   return data
 })
 
+// 過濾與排序邏輯 (置頂優先，再來依建立時間)
 const filteredBulletins = computed(() => {
   if (!bulletins.value) return []
-  return bulletins.value.filter(b => b.category === activeCategory.value)
+  let filtered = bulletins.value.filter(b => b.category === activeCategory.value)
+  
+  return filtered.sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) {
+      return a.is_pinned ? -1 : 1 // 讓 true 排在前面
+    }
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
 })
 </script>
 

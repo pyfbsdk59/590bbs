@@ -1,5 +1,15 @@
 <template>
-  <div class="mt-10 bg-white p-6 md:p-10 rounded-xl shadow-lg transition-colors duration-300">
+  <div class="mt-10 bg-white p-6 md:p-10 rounded-xl shadow-lg transition-colors duration-300 relative overflow-hidden">
+    
+    <div v-if="showRenderToast" class="fixed bottom-10 right-10 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 animate-bounce-in flex items-center gap-4 border-2 border-white">
+      <span class="text-3xl animate-pulse">🛸</span>
+      <div>
+        <h4 class="font-bold text-lg">Render 喚醒就緒！</h4>
+        <p class="text-sm opacity-90">已過 60 秒，伺服器應該已完成冷啟動。</p>
+      </div>
+      <button @click="showRenderToast = false" class="ml-4 hover:text-gray-200 font-bold text-xl">✖</button>
+    </div>
+
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold">後台管理</h2>
       <button v-if="isAuthenticated" @click="logout" class="text-gray-500 hover:text-red-600 text-sm font-bold flex items-center gap-1 transition-colors">
@@ -9,17 +19,9 @@
 
     <div v-if="!isAuthenticated" class="space-y-4">
       <label class="block text-sm font-medium text-gray-700">請輸入今日動態密碼</label>
-      <input 
-        v-model="inputPassword" 
-        type="password" 
-        class="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
-        :class="themeObj.ring"
-        @keyup.enter="login"
-      >
+      <input v-model="inputPassword" type="password" class="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:border-transparent" :class="themeObj.ring" @keyup.enter="login">
       <p v-if="errorMsg" class="text-red-500 text-sm">{{ errorMsg }}</p>
-      <button @click="login" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded w-full transition duration-300']">
-        登入
-      </button>
+      <button @click="login" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded w-full transition duration-300']">登入</button>
     </div>
 
     <div v-else class="space-y-8 animate-fade-in">
@@ -35,9 +37,7 @@
             <div class="md:w-1/3">
               <label class="block text-sm text-gray-600 mb-1">網站風格主題</label>
               <select v-model="siteTheme" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white', themeObj.ring]">
-                <option v-for="(config, key) in themeConfig" :key="key" :value="key">
-                  {{ config.label }}
-                </option>
+                <option v-for="(config, key) in themeConfig" :key="key" :value="key">{{ config.label }}</option>
               </select>
             </div>
           </div>
@@ -45,93 +45,141 @@
             <label class="block text-sm text-gray-600 mb-1">跑馬燈內容</label>
             <input v-model="marqueeText" type="text" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           </div>
-          <button @click="updateSettings" :class="[themeObj.bg, themeObj.hover, 'text-white px-6 py-2 rounded font-medium transition duration-300 shadow-sm']">
-            儲存全域設定
-          </button>
+          <button @click="updateSettings" :class="[themeObj.bg, themeObj.hover, 'text-white px-6 py-2 rounded font-medium transition duration-300 shadow-sm']">儲存全域設定</button>
         </div>
       </section>
 
-      <section class="border-b pb-6">
-        <h3 class="text-xl font-semibold mb-4">新增教學內容</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">所屬科目分類</label>
-            <select v-model="newPost.category" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white', themeObj.ring]">
-              <option value="資訊科技">💻 資訊科技</option>
-              <option value="英語">🔤 英語</option>
-            </select>
+      <section class="border-b pb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <h3 class="text-xl font-semibold mb-4">✨ 新增教學內容</h3>
+        <div class="space-y-4">
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="md:w-1/3">
+              <label class="block text-sm text-gray-600 mb-1">所屬科目</label>
+              <select v-model="newPost.category" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white', themeObj.ring]">
+                <option value="資訊科技">💻 資訊科技</option>
+                <option value="英語">🔤 英語</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm text-gray-600 mb-1">教學標題 (必填)</label>
+              <input v-model="newPost.title" type="text" placeholder="輸入標題..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+            </div>
           </div>
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">教學標題 (必填)</label>
-            <input v-model="newPost.title" type="text" placeholder="輸入標題..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+          
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="newPost.is_pinned" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
+              <span class="text-sm font-bold text-yellow-600">📌 置頂此公告</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="newPost.is_important" type="checkbox" class="w-4 h-4 text-red-600 rounded">
+              <span class="text-sm font-bold text-red-600">🔥 標記為重要 (紅色強調)</span>
+            </label>
           </div>
+
           <div>
             <label class="block text-sm text-gray-600 mb-1">內容說明</label>
-            <textarea v-model="newPost.description" placeholder="簡單描述一下這個教學..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent rows-3', themeObj.ring]"></textarea>
+            <textarea v-model="newPost.description" placeholder="簡單描述一下..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent rows-2', themeObj.ring]"></textarea>
           </div>
+          
           <div>
-            <label class="block text-sm text-gray-600 mb-1">超連結網址 (必填)</label>
+            <label class="block text-sm text-gray-600 mb-1">主要網址 (必填)</label>
             <input v-model="newPost.url" type="url" placeholder="https://..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           </div>
-          <button @click="addPost" :class="[themeObj.bg, themeObj.hover, 'text-white px-6 py-2 rounded font-medium transition duration-300 shadow-sm']">
-            發布內容
-          </button>
+
+          <div class="bg-white p-3 rounded border border-gray-200">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm text-gray-600 font-bold">額外相關網址 (選填)</label>
+              <button @click="addLinkToObj(newPost)" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">+ 新增一組網址</button>
+            </div>
+            <div v-for="(link, index) in newPost.links" :key="index" class="flex gap-2 mb-2 items-center">
+              <input v-model="link.name" type="text" placeholder="按鈕名稱 (例: 講義下載)" class="border border-gray-300 p-1.5 text-sm rounded w-1/3">
+              <input v-model="link.url" type="url" placeholder="https://..." class="border border-gray-300 p-1.5 text-sm rounded flex-1">
+              <button @click="removeLinkFromObj(newPost, index)" class="text-red-500 hover:text-red-700 font-bold px-2">✖</button>
+            </div>
+          </div>
+
+          <button @click="addPost" :class="[themeObj.bg, themeObj.hover, 'text-white px-6 py-2 rounded font-medium transition duration-300 shadow-sm w-full md:w-auto']">發布內容</button>
         </div>
       </section>
 
       <section class="border-b pb-6">
         <h3 class="text-xl font-semibold mb-4">管理教學內容</h3>
 
-        <div v-if="editingPost" class="bg-gray-50 p-4 rounded-lg border border-gray-300 shadow-sm space-y-3 mb-4 animate-fade-in">
-          <div class="flex justify-between items-center mb-2">
+        <div v-if="editingPost" class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm space-y-4 mb-4 animate-fade-in relative">
+          <div class="flex justify-between items-center border-b border-yellow-200 pb-2">
             <h4 class="font-bold text-gray-800">✏️ 編輯教學內容</h4>
             <button @click="cancelEdit" class="text-gray-500 hover:text-red-500 text-sm font-bold">✖ 取消</button>
           </div>
+          
           <div class="flex flex-col md:flex-row gap-3">
             <div class="md:w-1/3">
               <label class="block text-xs text-gray-500 mb-1">分類</label>
-              <select v-model="editingPost.category" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm', themeObj.ring]">
+              <select v-model="editingPost.category" class="border border-gray-300 p-2 w-full rounded bg-white text-sm">
                 <option value="資訊科技">💻 資訊科技</option>
                 <option value="英語">🔤 英語</option>
               </select>
             </div>
             <div class="flex-1">
               <label class="block text-xs text-gray-500 mb-1">標題</label>
-              <input v-model="editingPost.title" type="text" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm', themeObj.ring]">
+              <input v-model="editingPost.title" type="text" class="border border-gray-300 p-2 w-full rounded text-sm">
             </div>
           </div>
+
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="editingPost.is_pinned" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
+              <span class="text-sm font-bold text-yellow-600">📌 置頂</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="editingPost.is_important" type="checkbox" class="w-4 h-4 text-red-600 rounded">
+              <span class="text-sm font-bold text-red-600">🔥 重要</span>
+            </label>
+          </div>
+
           <div>
             <label class="block text-xs text-gray-500 mb-1">說明</label>
-            <textarea v-model="editingPost.description" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm rows-2', themeObj.ring]"></textarea>
+            <textarea v-model="editingPost.description" class="border border-gray-300 p-2 w-full rounded text-sm rows-2"></textarea>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1">網址</label>
-            <input v-model="editingPost.url" type="url" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm', themeObj.ring]">
+            <label class="block text-xs text-gray-500 mb-1">主要網址</label>
+            <input v-model="editingPost.url" type="url" class="border border-gray-300 p-2 w-full rounded text-sm">
           </div>
+
+          <div class="bg-white p-3 rounded border border-gray-200">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs text-gray-500 font-bold">額外相關網址</label>
+              <button @click="addLinkToObj(editingPost)" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">+ 新增一組網址</button>
+            </div>
+            <div v-for="(link, index) in editingPost.links" :key="index" class="flex gap-2 mb-2 items-center">
+              <input v-model="link.name" type="text" placeholder="名稱" class="border border-gray-300 p-1.5 text-sm rounded w-1/3">
+              <input v-model="link.url" type="url" placeholder="https://..." class="border border-gray-300 p-1.5 text-sm rounded flex-1">
+              <button @click="removeLinkFromObj(editingPost, index)" class="text-red-500 hover:text-red-700 font-bold px-2">✖</button>
+            </div>
+          </div>
+
           <div class="flex justify-end gap-2 mt-3">
             <button @click="cancelEdit" class="px-4 py-2 rounded text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors font-medium">取消</button>
             <button @click="saveEdit" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded text-sm transition-colors font-medium']">儲存變更</button>
           </div>
         </div>
 
-        <ul v-else class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-          <li v-for="item in adminBulletins" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <ul v-else class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+          <li v-for="item in adminBulletins" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-shadow" :class="item.is_important ? 'border-red-300 bg-red-50' : 'border-gray-200'">
             <div class="flex flex-col mb-2 md:mb-0">
-              <div class="flex items-center gap-2">
-                <span :class="item.category === '資訊科技' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'" class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">
-                  {{ item.category }}
-                </span>
-                <span class="font-bold text-gray-800 text-lg">{{ item.title }}</span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span v-if="item.is_pinned" class="bg-yellow-400 text-white text-[10px] px-1.5 py-0.5 rounded">📌</span>
+                <span v-if="item.is_important" class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">🔥</span>
+                <span :class="item.category === '資訊科技' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'" class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">{{ item.category }}</span>
+                <span class="font-bold text-gray-800 text-base" :class="{'text-red-700': item.is_important}">{{ item.title }}</span>
               </div>
-              <span class="text-xs text-gray-500 mt-1 truncate max-w-xs md:max-w-md" :title="item.url">🔗 {{ item.url }}</span>
+              <span class="text-xs text-gray-500 mt-1 truncate max-w-xs md:max-w-md">🔗 {{ item.url }}</span>
+              <span v-if="item.links && item.links.length > 0" class="text-[10px] text-gray-400 mt-0.5">+ 包含 {{ item.links.length }} 個額外網址</span>
             </div>
             <div class="flex gap-2 self-end md:self-auto mt-2 md:mt-0">
               <button @click="startEdit(item)" :class="['text-sm px-3 py-1 rounded border transition-colors font-medium', themeObj.text, themeObj.bg.replace('bg-', 'border-'), themeObj.bg.replace('bg-', 'hover:bg-').replace('600', '50')]">編輯</button>
               <button @click="deletePost(item.id)" class="text-red-500 hover:bg-red-500 hover:text-white text-sm px-3 py-1 rounded border border-transparent hover:border-red-600 transition-colors font-medium">刪除</button>
             </div>
-          </li>
-          <li v-if="adminBulletins.length === 0" class="text-sm text-gray-400 py-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
-            目前沒有任何教學內容。
           </li>
         </ul>
       </section>
@@ -161,9 +209,7 @@
           <input v-model="newKeepAlive.name" type="text" placeholder="網站名稱" :class="['border border-gray-300 p-2 w-full md:w-32 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           <input v-model="newKeepAlive.url" type="url" placeholder="喚醒 API 網址 (必填)" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           <input v-model="newKeepAlive.home_url" type="url" placeholder="真正首頁網址 (選填)" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
-          <button @click="addKeepAliveUrl" :class="[themeObj.bg, themeObj.hover, 'text-white px-5 py-2 rounded text-sm font-medium whitespace-nowrap transition-colors shadow-sm']">
-            新增網站
-          </button>
+          <button @click="addKeepAliveUrl" :class="[themeObj.bg, themeObj.hover, 'text-white px-5 py-2 rounded text-sm font-medium whitespace-nowrap transition-colors shadow-sm']">新增</button>
         </div>
 
         <div class="space-y-6">
@@ -175,12 +221,11 @@
                   <span class="font-bold text-gray-800">{{ item.name }}</span>
                   <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded truncate max-w-xs md:max-w-md">⚡ API: {{ item.url }}</span>
-                    <a v-if="item.home_url" :href="item.home_url" target="_blank" :class="['inline-flex items-center justify-center text-xs font-bold bg-opacity-10 hover:bg-opacity-20 px-3 py-1 rounded-md transition-colors w-fit', themeObj.text, themeObj.bg.replace('bg-', 'bg-').replace('600', '100')]">🔗 開啟首頁</a>
+                    <a v-if="item.home_url" :href="item.home_url" target="_blank" :class="['inline-flex items-center justify-center text-xs font-bold bg-opacity-10 hover:bg-opacity-20 px-3 py-1 rounded-md transition-colors w-fit', themeObj.text, themeObj.bg.replace('bg-', 'bg-').replace('600', '100')]">🔗 首頁</a>
                   </div>
                 </div>
                 <button @click="deleteKeepAliveUrl(item.id)" class="text-red-500 hover:bg-red-500 hover:text-white text-sm px-3 py-1 rounded border border-transparent hover:border-red-600 transition-colors self-end md:self-auto mt-2 md:mt-0">刪除</button>
               </li>
-              <li v-if="vercelUrls.length === 0" class="text-sm text-gray-400 py-2 bg-gray-50 text-center rounded border border-dashed border-gray-300">目前沒有 Vercel 專案。</li>
             </ul>
           </div>
           <div>
@@ -191,12 +236,11 @@
                   <span class="font-bold text-gray-800">{{ item.name }}</span>
                   <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded truncate max-w-xs md:max-w-md">⚡ API: {{ item.url }}</span>
-                    <a v-if="item.home_url" :href="item.home_url" target="_blank" :class="['inline-flex items-center justify-center text-xs font-bold bg-opacity-10 hover:bg-opacity-20 px-3 py-1 rounded-md transition-colors w-fit', themeObj.text, themeObj.bg.replace('bg-', 'bg-').replace('600', '100')]">🔗 開啟首頁</a>
+                    <a v-if="item.home_url" :href="item.home_url" target="_blank" :class="['inline-flex items-center justify-center text-xs font-bold bg-opacity-10 hover:bg-opacity-20 px-3 py-1 rounded-md transition-colors w-fit', themeObj.text, themeObj.bg.replace('bg-', 'bg-').replace('600', '100')]">🔗 首頁</a>
                   </div>
                 </div>
                 <button @click="deleteKeepAliveUrl(item.id)" class="text-red-500 hover:bg-red-500 hover:text-white text-sm px-3 py-1 rounded border border-transparent hover:border-red-600 transition-colors self-end md:self-auto mt-2 md:mt-0">刪除</button>
               </li>
-              <li v-if="renderUrls.length === 0" class="text-sm text-gray-400 py-2 bg-gray-50 text-center rounded border border-dashed border-gray-300">目前沒有 Render 專案。</li>
             </ul>
           </div>
         </div>
@@ -222,9 +266,6 @@
                 <td :class="['p-3 font-mono', themeObj.text]">{{ log.ip_address }}</td>
                 <td class="p-3 text-gray-600 truncate max-w-xs" :title="log.user_agent">{{ log.user_agent }}</td>
               </tr>
-              <tr v-if="visitorLogs.length === 0">
-                <td colspan="3" class="p-5 text-center text-gray-500">目前尚無來訪紀錄</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -242,11 +283,9 @@ import { themeConfig } from '@/utils/theme'
 const dayjs = useDayjs()
 const supabase = useSupabaseClient()
 
-// ====== 全域主題狀態 ======
 const currentTheme = useState('currentTheme')
 const themeObj = computed(() => themeConfig[currentTheme.value] || themeConfig.purple)
 
-// ====== 狀態變數 ======
 const isAuthenticated = ref(false)
 const inputPassword = ref('')
 const errorMsg = ref('')
@@ -255,10 +294,20 @@ const siteTitle = ref('')
 const marqueeText = ref('')
 const siteTheme = ref('purple')
 
-// 教學公告變數
-const newPost = ref({ title: '', description: '', url: '', category: '資訊科技' }) 
-const adminBulletins = ref([]) // 存放要管理的公告列表
-const editingPost = ref(null)  // 目前正在編輯的公告
+// 教學公告變數 (加入 links, is_important, is_pinned)
+const getEmptyPost = () => ({ title: '', description: '', url: '', category: '資訊科技', is_important: false, is_pinned: false, links: [] })
+const newPost = ref(getEmptyPost()) 
+const adminBulletins = ref([]) 
+const editingPost = ref(null)  
+
+// 動態網址管理方法
+const addLinkToObj = (obj) => {
+  if (!obj.links) obj.links = []
+  obj.links.push({ name: '', url: '' })
+}
+const removeLinkFromObj = (obj, index) => {
+  obj.links.splice(index, 1)
+}
 
 const visitorLogs = ref([])
 
@@ -268,10 +317,11 @@ const isPinging = ref(false)
 const isPingingPlatform = ref('')
 const pingResult = ref('')
 
+// Render 通知變數
+const showRenderToast = ref(false)
+
 const vercelUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Vercel' || !item.platform))
 const renderUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Render'))
-
-// ====== 核心登入與設定 ======
 
 const login = () => {
   const correctPassword = getTodayPassword()
@@ -281,7 +331,7 @@ const login = () => {
     loadSettings()
     loadVisitorLogs()
     loadKeepAliveUrls()
-    loadBulletins() // 登入後自動載入公告清單
+    loadBulletins() 
   } else {
     errorMsg.value = '密碼錯誤！'
   }
@@ -290,7 +340,7 @@ const login = () => {
 const logout = () => {
   isAuthenticated.value = false
   inputPassword.value = ''
-  navigateTo('/') // 新增這行：登出後自動跳轉回首頁
+  navigateTo('/') 
 }
 
 const loadSettings = async () => {
@@ -304,63 +354,56 @@ const loadSettings = async () => {
 }
 
 const updateSettings = async () => {
-  if (!siteTitle.value || !marqueeText.value) return alert('網站名稱與跑馬燈內容不可為空！')
+  if (!siteTitle.value || !marqueeText.value) return alert('必填！')
   await supabase.from('site_settings').upsert({ id: 1, title: siteTitle.value, marquee_text: marqueeText.value, theme: siteTheme.value })
   currentTheme.value = siteTheme.value 
   alert('設定已更新！')
 }
 
-// ====== 公告管理邏輯 (新增、編輯、刪除) ======
+// ====== 公告管理邏輯 ======
 
-// 載入所有公告供後台管理
 const loadBulletins = async () => {
-  const { data } = await supabase.from('bulletins').select('*').order('created_at', { ascending: false })
+  // 讓置頂的優先顯示，再依照建立時間排序
+  const { data } = await supabase.from('bulletins').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false })
   if (data) adminBulletins.value = data
 }
 
-// 新增公告
 const addPost = async () => {
-  if (!newPost.value.title || !newPost.value.url) return alert('「教學標題」與「超連結網址」為必填欄位！')
+  if (!newPost.value.title || !newPost.value.url) return alert('標題與網址必填！')
   await supabase.from('bulletins').insert([{ ...newPost.value }])
   alert('發布成功！')
-  newPost.value = { title: '', description: '', url: '', category: '資訊科技' }
-  loadBulletins() // 新增後立刻重新載入列表
+  newPost.value = getEmptyPost()
+  loadBulletins() 
 }
 
-// 刪除公告
 const deletePost = async (id) => {
-  if (!confirm('確定要刪除這筆教學內容嗎？此動作無法復原。')) return
+  if (!confirm('確定刪除？')) return
   await supabase.from('bulletins').delete().eq('id', id)
   loadBulletins()
 }
 
-// 進入編輯模式
 const startEdit = (post) => {
-  editingPost.value = { ...post } // 拷貝資料以供編輯，避免直接修改到列表中的畫面
+  // 深拷貝，確保有 links 陣列
+  editingPost.value = JSON.parse(JSON.stringify({ ...post, links: post.links || [] })) 
 }
 
-// 取消編輯
 const cancelEdit = () => {
   editingPost.value = null
 }
 
-// 儲存編輯變更
 const saveEdit = async () => {
-  if (!editingPost.value.title || !editingPost.value.url) return alert('標題與網址不可為空！')
+  if (!editingPost.value.title || !editingPost.value.url) return alert('標題與網址必填！')
   
-  const { id, title, description, url, category } = editingPost.value
-  const { error } = await supabase.from('bulletins').update({ title, description, url, category }).eq('id', id)
+  const { id, title, description, url, category, is_important, is_pinned, links } = editingPost.value
+  const { error } = await supabase.from('bulletins').update({ title, description, url, category, is_important, is_pinned, links }).eq('id', id)
   
-  if (error) {
-    alert('更新失敗: ' + error.message)
-  } else {
+  if (error) alert('更新失敗: ' + error.message)
+  else {
     alert('更新成功！')
-    editingPost.value = null // 關閉編輯表單
-    loadBulletins() // 重新載入列表
+    editingPost.value = null 
+    loadBulletins() 
   }
 }
-
-// ====== 其他系統功能 ======
 
 const loadVisitorLogs = async () => {
   const { data } = await supabase.from('visitor_logs').select('*').order('visited_at', { ascending: false }).limit(10)
@@ -378,21 +421,14 @@ const loadKeepAliveUrls = async () => {
 }
 
 const addKeepAliveUrl = async () => {
-  if (!newKeepAlive.value.name || !newKeepAlive.value.url) return alert('名稱與喚醒 API 網址為必填！')
-  try {
-    new URL(newKeepAlive.value.url)
-    if (newKeepAlive.value.home_url) new URL(newKeepAlive.value.home_url)
-  } catch (e) {
-    return alert('請輸入有效的網址 (需包含 http:// 或 https://)')
-  }
-  
+  if (!newKeepAlive.value.name || !newKeepAlive.value.url) return alert('必填！')
   await supabase.from('keep_alive_urls').insert([{ ...newKeepAlive.value }])
   newKeepAlive.value = { name: '', url: '', home_url: '', platform: 'Vercel' }
   loadKeepAliveUrls()
 }
 
 const deleteKeepAliveUrl = async (id) => {
-  if (!confirm('確定要刪除這個網站設定嗎？')) return
+  if (!confirm('確定刪除？')) return
   await supabase.from('keep_alive_urls').delete().eq('id', id)
   loadKeepAliveUrls()
 }
@@ -417,7 +453,7 @@ const pingUrlsByPlatform = async (platform) => {
       successCount++
       await delay(300) 
     } catch (error) {
-      console.error(`喚醒 ${item.name} 失敗:`, error)
+      console.error(`喚醒失敗:`, error)
     }
   }
 
@@ -425,10 +461,30 @@ const pingUrlsByPlatform = async (platform) => {
   isPingingPlatform.value = ''
   pingResult.value = `${platform} 喚醒完成！成功發送 ${successCount}/${targetUrls.length} 個請求。`
   setTimeout(() => { pingResult.value = '' }, 4000)
+
+  // 【核心新增】Render 60秒後通知邏輯
+  if (platform === 'Render') {
+    setTimeout(() => {
+      // 只要使用者還停留在後台頁面，60秒一到就會彈出這則通知
+      showRenderToast.value = true
+      // 10秒後自動關閉通知
+      setTimeout(() => {
+        showRenderToast.value = false
+      }, 10000)
+    }, 60000) // 60000 毫秒 = 60 秒
+  }
 }
 </script>
 
 <style scoped>
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 浮動通知動畫 */
+@keyframes bounce-in {
+  0% { transform: translateY(150%); opacity: 0; }
+  50% { transform: translateY(-10%); }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-bounce-in { animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 </style>
