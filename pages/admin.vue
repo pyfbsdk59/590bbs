@@ -290,6 +290,7 @@ const login = () => {
 const logout = () => {
   isAuthenticated.value = false
   inputPassword.value = ''
+  navigateTo('/') // 新增這行：登出後自動跳轉回首頁
 }
 
 const loadSettings = async () => {
