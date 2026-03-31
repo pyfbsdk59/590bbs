@@ -63,11 +63,11 @@
           </div>
           <div>
             <label class="block text-sm text-gray-600 mb-1">教學標題 (必填)</label>
-            <input v-model="newPost.title" type="text" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+            <input v-model="newPost.title" type="text" placeholder="輸入標題..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           </div>
           <div>
             <label class="block text-sm text-gray-600 mb-1">內容說明</label>
-            <textarea v-model="newPost.description" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent rows-3', themeObj.ring]"></textarea>
+            <textarea v-model="newPost.description" placeholder="簡單描述一下這個教學..." :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent rows-3', themeObj.ring]"></textarea>
           </div>
           <div>
             <label class="block text-sm text-gray-600 mb-1">超連結網址 (必填)</label>
@@ -77,6 +77,63 @@
             發布內容
           </button>
         </div>
+      </section>
+
+      <section class="border-b pb-6">
+        <h3 class="text-xl font-semibold mb-4">管理教學內容</h3>
+
+        <div v-if="editingPost" class="bg-gray-50 p-4 rounded-lg border border-gray-300 shadow-sm space-y-3 mb-4 animate-fade-in">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-bold text-gray-800">✏️ 編輯教學內容</h4>
+            <button @click="cancelEdit" class="text-gray-500 hover:text-red-500 text-sm font-bold">✖ 取消</button>
+          </div>
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="md:w-1/3">
+              <label class="block text-xs text-gray-500 mb-1">分類</label>
+              <select v-model="editingPost.category" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm', themeObj.ring]">
+                <option value="資訊科技">💻 資訊科技</option>
+                <option value="英語">🔤 英語</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs text-gray-500 mb-1">標題</label>
+              <input v-model="editingPost.title" type="text" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm', themeObj.ring]">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">說明</label>
+            <textarea v-model="editingPost.description" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm rows-2', themeObj.ring]"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">網址</label>
+            <input v-model="editingPost.url" type="url" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent text-sm', themeObj.ring]">
+          </div>
+          <div class="flex justify-end gap-2 mt-3">
+            <button @click="cancelEdit" class="px-4 py-2 rounded text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors font-medium">取消</button>
+            <button @click="saveEdit" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded text-sm transition-colors font-medium']">儲存變更</button>
+          </div>
+        </div>
+
+        <ul v-else class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+          <li v-for="item in adminBulletins" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex flex-col mb-2 md:mb-0">
+              <div class="flex items-center gap-2">
+                <span :class="item.category === '資訊科技' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'" class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">
+                  {{ item.category }}
+                </span>
+                <span class="font-bold text-gray-800 text-lg">{{ item.title }}</span>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 truncate max-w-xs md:max-w-md" :title="item.url">🔗 {{ item.url }}</span>
+            </div>
+            <div class="flex gap-2 self-end md:self-auto mt-2 md:mt-0">
+              <button @click="startEdit(item)" :class="['text-sm px-3 py-1 rounded border transition-colors font-medium', themeObj.text, themeObj.bg.replace('bg-', 'border-'), themeObj.bg.replace('bg-', 'hover:bg-').replace('600', '50')]">編輯</button>
+              <button @click="deletePost(item.id)" class="text-red-500 hover:bg-red-500 hover:text-white text-sm px-3 py-1 rounded border border-transparent hover:border-red-600 transition-colors font-medium">刪除</button>
+            </div>
+          </li>
+          <li v-if="adminBulletins.length === 0" class="text-sm text-gray-400 py-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            目前沒有任何教學內容。
+          </li>
+        </ul>
       </section>
 
       <section class="border-b pb-6">
@@ -196,9 +253,13 @@ const errorMsg = ref('')
 
 const siteTitle = ref('')
 const marqueeText = ref('')
-const siteTheme = ref('purple') // 綁定下拉選單
+const siteTheme = ref('purple')
 
+// 教學公告變數
 const newPost = ref({ title: '', description: '', url: '', category: '資訊科技' }) 
+const adminBulletins = ref([]) // 存放要管理的公告列表
+const editingPost = ref(null)  // 目前正在編輯的公告
+
 const visitorLogs = ref([])
 
 const keepAliveUrls = ref([])
@@ -210,7 +271,7 @@ const pingResult = ref('')
 const vercelUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Vercel' || !item.platform))
 const renderUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Render'))
 
-// ====== 核心功能 ======
+// ====== 核心登入與設定 ======
 
 const login = () => {
   const correctPassword = getTodayPassword()
@@ -220,12 +281,12 @@ const login = () => {
     loadSettings()
     loadVisitorLogs()
     loadKeepAliveUrls()
+    loadBulletins() // 登入後自動載入公告清單
   } else {
     errorMsg.value = '密碼錯誤！'
   }
 }
 
-// 登出功能
 const logout = () => {
   isAuthenticated.value = false
   inputPassword.value = ''
@@ -237,28 +298,68 @@ const loadSettings = async () => {
     siteTitle.value = data.title
     marqueeText.value = data.marquee_text
     siteTheme.value = data.theme || 'purple'
-    currentTheme.value = siteTheme.value // 同步目前全域主題
+    currentTheme.value = siteTheme.value
   }
 }
 
 const updateSettings = async () => {
   if (!siteTitle.value || !marqueeText.value) return alert('網站名稱與跑馬燈內容不可為空！')
-  await supabase.from('site_settings').upsert({ 
-    id: 1, 
-    title: siteTitle.value, 
-    marquee_text: marqueeText.value,
-    theme: siteTheme.value // 儲存主題設定
-  })
-  currentTheme.value = siteTheme.value // 按下儲存瞬間，全站變色！
+  await supabase.from('site_settings').upsert({ id: 1, title: siteTitle.value, marquee_text: marqueeText.value, theme: siteTheme.value })
+  currentTheme.value = siteTheme.value 
   alert('設定已更新！')
 }
 
+// ====== 公告管理邏輯 (新增、編輯、刪除) ======
+
+// 載入所有公告供後台管理
+const loadBulletins = async () => {
+  const { data } = await supabase.from('bulletins').select('*').order('created_at', { ascending: false })
+  if (data) adminBulletins.value = data
+}
+
+// 新增公告
 const addPost = async () => {
   if (!newPost.value.title || !newPost.value.url) return alert('「教學標題」與「超連結網址」為必填欄位！')
   await supabase.from('bulletins').insert([{ ...newPost.value }])
   alert('發布成功！')
   newPost.value = { title: '', description: '', url: '', category: '資訊科技' }
+  loadBulletins() // 新增後立刻重新載入列表
 }
+
+// 刪除公告
+const deletePost = async (id) => {
+  if (!confirm('確定要刪除這筆教學內容嗎？此動作無法復原。')) return
+  await supabase.from('bulletins').delete().eq('id', id)
+  loadBulletins()
+}
+
+// 進入編輯模式
+const startEdit = (post) => {
+  editingPost.value = { ...post } // 拷貝資料以供編輯，避免直接修改到列表中的畫面
+}
+
+// 取消編輯
+const cancelEdit = () => {
+  editingPost.value = null
+}
+
+// 儲存編輯變更
+const saveEdit = async () => {
+  if (!editingPost.value.title || !editingPost.value.url) return alert('標題與網址不可為空！')
+  
+  const { id, title, description, url, category } = editingPost.value
+  const { error } = await supabase.from('bulletins').update({ title, description, url, category }).eq('id', id)
+  
+  if (error) {
+    alert('更新失敗: ' + error.message)
+  } else {
+    alert('更新成功！')
+    editingPost.value = null // 關閉編輯表單
+    loadBulletins() // 重新載入列表
+  }
+}
+
+// ====== 其他系統功能 ======
 
 const loadVisitorLogs = async () => {
   const { data } = await supabase.from('visitor_logs').select('*').order('visited_at', { ascending: false }).limit(10)
@@ -269,8 +370,6 @@ const formatDate = (dateString) => {
   if (!dateString) return ''
   return dayjs(dateString).format('YYYY/MM/DD HH:mm:ss')
 }
-
-// ====== 保活與捷徑功能邏輯 ======
 
 const loadKeepAliveUrls = async () => {
   const { data } = await supabase.from('keep_alive_urls').select('*').order('created_at', { ascending: false })
