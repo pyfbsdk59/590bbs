@@ -18,10 +18,22 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+
 const supabase = useSupabaseClient()
 const { data: settings } = await useAsyncData('settings', async () => {
   const { data } = await supabase.from('site_settings').select('*').eq('id', 1).single()
   return data
+})
+
+// 網頁載入完成後，默默在背景呼叫我們剛寫好的 API
+onMounted(() => {
+  $fetch('/api/log-visitor', {
+    method: 'POST'
+  }).catch((err) => {
+    // 失敗也不影響畫面顯示，默默印在 console 即可
+    console.error('紀錄 API 呼叫失敗', err)
+  })
 })
 </script>
 
