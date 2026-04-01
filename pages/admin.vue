@@ -80,8 +80,8 @@
               <input v-model="tgTopicId" type="number" placeholder="例: 45" class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm">
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-bold text-indigo-900 mb-1">選擇聲音檔 (支援 .wav, .m4a, .mp3, .aac 等各式音檔，可多選)</label>
-              <input type="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.amr,.wma" multiple ref="tgFileInput" @change="selectFiles" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-200 file:text-indigo-800 hover:file:bg-indigo-300 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
+              <label class="block text-sm font-bold text-indigo-900 mb-1">選擇聲音檔 (支援 .wav, .mp3, .3gp 等各式格式，可多選)</label>
+              <input type="file" accept="audio/*,video/3gpp,video/3gpp2,audio/3gpp,audio/3gpp2,.wav,.mp3,.m4a,.aac,.ogg,.flac,.amr,.wma,.3gp,.3gpp" multiple ref="tgFileInput" @change="selectFiles" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-200 file:text-indigo-800 hover:file:bg-indigo-300 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
             </div>
           </div>
 
@@ -95,7 +95,7 @@
           </div>
 
           <div class="mb-4">
-             <label class="block text-sm font-bold text-indigo-900 mb-1">檔案補充說明 (將套用於本次批次的所有檔案)</label>
+             <label class="block text-sm font-bold text-indigo-900 mb-1">錄音檔補充說明 (將套用於本次批次的所有檔案)</label>
              <textarea v-model="tgCustomCaption" placeholder="例如：刑法總則第五章 (可留空)..." class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm rows-2"></textarea>
           </div>
 
