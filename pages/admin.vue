@@ -62,26 +62,50 @@
           <span class="text-xs bg-gray-800 text-white px-2 py-1 rounded shadow-sm">僅限管理員可見</span>
         </h3>
 
-        <div class="flex flex-wrap items-center gap-2 mb-6 bg-gray-50 p-2 rounded-lg border border-gray-200">
-          <button 
-            v-for="tab in adminTabs" :key="tab.id"
-            @click="activeAdminTab = tab.id"
-            :class="[activeAdminTab === tab.id ? themeObj.bg + ' text-white shadow-md' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100', 'px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 group']"
-          >
-            {{ tab.name }}
-            <span @click.stop="deleteAdminTab(tab.id)" class="text-xs opacity-50 group-hover:opacity-100 hover:text-red-500 transition-opacity">✖</span>
-          </button>
+        <div class="flex flex-wrap items-center gap-2 mb-6 bg-gray-50 p-2 rounded-lg border border-gray-200 min-h-[56px]">
+          <div v-for="tab in adminTabs" :key="tab.id" class="relative group flex items-center">
+            
+            <div v-if="editingTabId === tab.id" class="flex items-center bg-white border-2 border-blue-400 rounded-full px-2 py-1 shadow-sm">
+              <input v-model="editingTabName" @keyup.enter="saveTabName(tab)" class="w-24 text-sm outline-none px-1">
+              <button @click="saveTabName(tab)" class="text-green-600 hover:bg-green-100 p-1 rounded-full text-xs">✔</button>
+              <button @click="editingTabId = null" class="text-red-500 hover:bg-red-100 p-1 rounded-full text-xs">✖</button>
+            </div>
+
+            <button 
+              v-else
+              @click="activeAdminTab = tab.id"
+              :class="[activeAdminTab === tab.id ? themeObj.bg + ' text-white shadow-md' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100', 'px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-1.5']"
+            >
+              {{ tab.name }}
+              <span @click.stop="startEditTab(tab)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-blue-300 transition-opacity ml-1 bg-black/10 px-1.5 py-0.5 rounded">✎</span>
+              <span @click.stop="deleteAdminTab(tab.id)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity bg-black/10 px-1.5 py-0.5 rounded">✖</span>
+            </button>
+          </div>
           
           <div class="flex items-center ml-auto bg-white border border-gray-300 rounded-full overflow-hidden shadow-sm">
-            <input v-model="newAdminTabName" type="text" placeholder="+ 新增分頁" class="text-sm px-3 py-2 w-32 focus:outline-none" @keyup.enter="addAdminTab">
+            <input v-model="newAdminTabName" type="text" placeholder="+ 新增分頁" class="text-sm px-3 py-2 w-28 md:w-32 focus:outline-none" @keyup.enter="addAdminTab">
             <button @click="addAdminTab" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 text-sm font-bold transition-colors border-l border-gray-300">新增</button>
           </div>
         </div>
 
         <div v-if="activeAdminTab" class="bg-blue-50 border border-blue-100 p-4 rounded-xl animate-fade-in relative">
-          <h4 class="font-bold text-blue-800 mb-3 flex justify-between items-center border-b border-blue-200 pb-2">
-            <span>📝 在「{{ currentTabName }}」新增私密內容</span>
-          </h4>
+          
+          <div class="flex flex-col md:flex-row md:justify-between md:items-center border-b border-blue-200 pb-3 mb-4 gap-3">
+            <h4 class="font-bold text-blue-800 flex items-center gap-2">
+              📝 在「{{ currentTabName }}」新增私密內容
+            </h4>
+            
+            <input type="file" accept=".csv" ref="csvFileInput" class="hidden" @change="handleCsvImport">
+
+            <div class="flex gap-2">
+              <button @click="triggerImportCsv" class="text-xs bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 font-bold px-3 py-1.5 rounded shadow-sm flex items-center gap-1">
+                📥 匯入 CSV
+              </button>
+              <button @click="exportAdminNotesCSV" class="text-xs bg-green-600 text-white hover:bg-green-700 font-bold px-3 py-1.5 rounded shadow-sm flex items-center gap-1">
+                📤 匯出 CSV
+              </button>
+            </div>
+          </div>
 
           <div v-if="editingAdminNote" class="bg-white p-4 rounded-lg shadow-sm border border-yellow-300 mb-4 ring-2 ring-yellow-200">
             <h5 class="text-xs font-bold text-yellow-600 mb-2">✏️ 編輯模式中</h5>
@@ -432,19 +456,23 @@ const siteSortOrder = ref('newest')
 const adminTabs = ref([])
 const activeAdminTab = ref(null)
 const newAdminTabName = ref('')
+const editingTabId = ref(null)     // 正在編輯的分頁 ID
+const editingTabName = ref('')     // 正在編輯的分頁名稱
+
+const currentTabName = computed(() => adminTabs.value.find(t => t.id === activeAdminTab.value)?.name || '')
+
 const adminNotes = ref([])
 const getEmptyAdminNote = () => ({ title: '', description: '', url: '', is_important: false, is_pinned: false, links: [] })
 const newAdminNote = ref(getEmptyAdminNote())
 const editingAdminNote = ref(null)
 
-// 根據目前選擇的 Tab 過濾並排序私密內容
 const filteredAdminNotes = computed(() => {
   if (!activeAdminTab.value || !adminNotes.value) return []
   return adminNotes.value
     .filter(n => n.tab_id === activeAdminTab.value)
     .sort((a, b) => {
       if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1
-      return new Date(b.created_at) - new Date(a.created_at) // 預設最新在前
+      return new Date(b.created_at) - new Date(a.created_at)
     })
 })
 
@@ -473,8 +501,8 @@ const login = () => {
     isAuthenticated.value = true
     errorMsg.value = ''
     loadSettings()
-    loadAdminTabs()  // 載入私密分頁
-    loadAdminNotes() // 載入私密內容
+    loadAdminTabs()  
+    loadAdminNotes() 
     loadBulletins() 
     loadTodos() 
     loadKeepAliveUrls()
@@ -508,12 +536,12 @@ const updateSettings = async () => {
   alert('設定已更新！')
 }
 
-// ====== 私密分頁邏輯 ======
+// ====== 私密分頁邏輯 (新增更名) ======
 const loadAdminTabs = async () => {
   const { data } = await supabase.from('admin_tabs').select('*').order('created_at', { ascending: true })
   if (data) {
     adminTabs.value = data
-    if (data.length > 0 && !activeAdminTab.value) activeAdminTab.value = data[0].id // 預設選第一個
+    if (data.length > 0 && !activeAdminTab.value) activeAdminTab.value = data[0].id
   }
 }
 
@@ -523,7 +551,7 @@ const addAdminTab = async () => {
   if (!error && data) {
     newAdminTabName.value = ''
     await loadAdminTabs()
-    activeAdminTab.value = data.id // 自動切換到新分頁
+    activeAdminTab.value = data.id
   }
 }
 
@@ -533,6 +561,121 @@ const deleteAdminTab = async (id) => {
   if (activeAdminTab.value === id) activeAdminTab.value = null
   loadAdminTabs()
   loadAdminNotes()
+}
+
+// 分頁更名邏輯
+const startEditTab = (tab) => {
+  editingTabId.value = tab.id
+  editingTabName.value = tab.name
+}
+
+const saveTabName = async (tab) => {
+  if (!editingTabName.value) return alert('名稱不能為空！')
+  const { error } = await supabase.from('admin_tabs').update({ name: editingTabName.value }).eq('id', tab.id)
+  if (!error) {
+    editingTabId.value = null
+    loadAdminTabs()
+  } else {
+    alert('更新失敗')
+  }
+}
+
+// ====== 私密內容匯出與匯入 CSV (強大防亂碼器) ======
+
+const exportAdminNotesCSV = () => {
+  const notes = filteredAdminNotes.value
+  if (!notes.length) return alert('這個分頁目前沒有資料可以匯出喔！')
+  
+  const headers = ['標題(title)', '內容說明(description)', '主網址(url)', '是否置頂(is_pinned)', '是否重要(is_important)', '額外網址(links_json)']
+  let csvContent = headers.join(',') + '\n'
+  
+  notes.forEach(n => {
+    // 處理內容裡的雙引號，並在前後加上雙引號以支援換行和逗號
+    const title = `"${(n.title || '').replace(/"/g, '""')}"`
+    const desc = `"${(n.description || '').replace(/"/g, '""')}"`
+    const url = `"${(n.url || '').replace(/"/g, '""')}"`
+    const isPinned = n.is_pinned ? 'TRUE' : 'FALSE'
+    const isImportant = n.is_important ? 'TRUE' : 'FALSE'
+    const linksStr = `"${JSON.stringify(n.links || []).replace(/"/g, '""')}"`
+    
+    csvContent += [title, desc, url, isPinned, isImportant, linksStr].join(',') + '\n'
+  })
+  
+  // 加入 BOM (\uFEFF) 確保 Excel 用 UTF-8 開啟不會有中文亂碼
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `私密分頁備份_${currentTabName.value}.csv`
+  link.click()
+}
+
+const csvFileInput = ref(null)
+const triggerImportCsv = () => { csvFileInput.value.click() }
+
+// CSV 字串強健解析器 (支援處理雙引號包起來的換行與逗號)
+const parseCSVString = (str) => {
+  const arr = []
+  let quote = false
+  let row = 0, col = 0
+  for (let c = 0; c < str.length; c++) {
+    let cc = str[c], nc = str[c+1]
+    arr[row] = arr[row] || []
+    arr[row][col] = arr[row][col] || ''
+
+    if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }  
+    if (cc == '"') { quote = !quote; continue; }
+    if (cc == ',' && !quote) { ++col; continue; }
+    if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+    if (cc == '\r' && !quote) { continue; }
+    arr[row][col] += cc
+  }
+  return arr.filter(r => r.length > 1 || r[0] !== '') // 過濾空行
+}
+
+const handleCsvImport = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    const text = e.target.result
+    const rows = parseCSVString(text)
+    
+    if (rows.length < 2) return alert('CSV 檔案格式錯誤或沒有資料！')
+    
+    const insertData = []
+    // 從第1列開始讀 (第0列是 Header)
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i]
+      // 對應匯出時的 6 個欄位
+      if (row.length < 6) continue 
+      
+      let parsedLinks = []
+      try { parsedLinks = JSON.parse(row[5]) } catch(e) {}
+
+      insertData.push({
+        tab_id: activeAdminTab.value,
+        title: row[0],
+        description: row[1],
+        url: row[2],
+        is_pinned: row[3].trim().toUpperCase() === 'TRUE',
+        is_important: row[4].trim().toUpperCase() === 'TRUE',
+        links: parsedLinks
+      })
+    }
+    
+    if (insertData.length > 0) {
+      const { error } = await supabase.from('admin_notes').insert(insertData)
+      if (error) alert('匯入失敗: ' + error.message)
+      else {
+        alert(`成功匯入 ${insertData.length} 筆資料！`)
+        loadAdminNotes()
+      }
+    }
+    // 清空 input 確保下次可選同一檔案
+    csvFileInput.value.value = '' 
+  }
+  reader.readAsText(file)
 }
 
 // ====== 私密內容邏輯 ======
