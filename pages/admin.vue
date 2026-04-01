@@ -4,8 +4,8 @@
     <div v-if="showRenderToast" class="fixed bottom-10 right-10 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 animate-bounce-in flex items-center gap-4 border-2 border-white">
       <span class="text-3xl animate-pulse">🛸</span>
       <div>
-        <h4 class="font-bold text-lg">Render 喚醒就緒！</h4>
-        <p class="text-sm opacity-90">已過 60 秒，伺服器應該已完成冷啟動。</p>
+        <h4 class="font-bold text-lg">伺服器喚醒就緒！</h4>
+        <p class="text-sm opacity-90">已過 60 秒，Render/TG 伺服器應該已完成冷啟動。</p>
       </div>
       <button @click="showRenderToast = false" class="ml-4 hover:text-gray-200 font-bold text-xl">✖</button>
     </div>
@@ -57,31 +57,58 @@
       </section>
 
       <section class="border-b pb-6">
-        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
-          🎙️ Telegram 錄音大檔上傳中心
-          <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded shadow-sm border border-indigo-200">雲端保全工具</span>
-        </h3>
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+          <h3 class="text-xl font-semibold flex items-center gap-2">
+            🎙️ Telegram 錄音證據上傳中心
+            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded shadow-sm border border-indigo-200">雲端保全工具</span>
+          </h3>
+          
+          <button 
+            @click="wakeUpTgServer" 
+            :disabled="tgWakeUpCountdown > 0"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <span v-if="tgWakeUpCountdown > 0">⏳ 伺服器喚醒中... ({{ tgWakeUpCountdown }}s)</span>
+            <span v-else>🛸 獨立喚醒 TG 上傳伺服器</span>
+          </button>
+        </div>
         
         <div class="bg-indigo-50 border border-indigo-200 p-4 md:p-6 rounded-xl shadow-sm relative">
           <div class="mb-4 text-xs text-indigo-700 bg-white p-3 rounded border border-indigo-100 flex items-start gap-2">
             <span class="text-lg">💡</span>
-            <p><strong>上傳前請確認：</strong>請先在最下方的「外部網站保活設定」中，按下 **[🛸 喚醒所有 Render]** 並等待 60 秒浮動通知出現後再進行上傳，避免伺服器剛從休眠啟動導致上傳失敗或逾時。</p>
+            <p><strong>上傳守則：</strong>請先點擊右上角喚醒伺服器，等待倒數結束或浮動通知出現。接著填寫資訊、選擇檔案，最後按下「確認上傳」。</p>
           </div>
 
-          <div class="flex flex-col md:flex-row md:items-end gap-4">
-            <div class="md:w-1/3">
-              <label class="block text-sm font-bold text-indigo-900 mb-1">目標 Topic ID (月份資料夾代碼)</label>
-              <input v-model="tgTopicId" type="number" placeholder="例如: 45" class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white shadow-sm">
+          <div class="flex flex-col md:flex-row md:items-start gap-4 mb-4">
+            <div class="md:w-1/4">
+              <label class="block text-sm font-bold text-indigo-900 mb-1">目標 Topic ID (月份)</label>
+              <input v-model="tgTopicId" type="number" placeholder="例: 45" class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm">
             </div>
+            
             <div class="flex-1">
               <label class="block text-sm font-bold text-indigo-900 mb-1">選擇上課錄音檔 (.wav / .mp3)</label>
-              <input type="file" accept="audio/*" @change="handleFileUpload" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
+              <input type="file" accept="audio/*" @change="selectFile" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-200 file:text-indigo-800 hover:file:bg-indigo-300 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
             </div>
           </div>
 
-          <div v-if="uploadStatus" class="mt-4 flex items-center gap-3 p-3 rounded-lg" :class="uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-300'">
-            <div v-if="isUploading" class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-sm font-bold">{{ uploadStatus }}</p>
+          <div class="mb-4">
+             <label class="block text-sm font-bold text-indigo-900 mb-1">錄音檔補充說明 (選填，將隨檔案傳至 TG)</label>
+             <textarea v-model="tgCustomCaption" placeholder="例如：刑法總則第五章、有同學發問..." class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm rows-2"></textarea>
+          </div>
+
+          <div class="flex flex-col md:flex-row items-center gap-4 pt-2 border-t border-indigo-200">
+            <button 
+              @click="submitUpload" 
+              :disabled="!selectedFile || isUploading"
+              class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <span v-if="isUploading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>{{ isUploading ? '大檔努力上傳中...' : '🚀 確認上傳至 Telegram' }}</span>
+            </button>
+            
+            <div v-if="uploadStatus" class="flex-1 px-3 py-2 rounded-lg text-sm font-bold" :class="uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'">
+              {{ uploadStatus }}
+            </div>
           </div>
 
           <div v-if="tgUploadResult" class="mt-4 bg-white border-2 border-green-400 p-4 rounded-lg shadow-sm animate-fade-in">
@@ -181,8 +208,8 @@
             <div class="flex gap-2 mb-2">
               <input v-model="newAdminNote.title" type="text" placeholder="標題 (必填)" class="border border-gray-300 p-2 w-full rounded text-sm focus:ring-1 focus:ring-blue-300">
             </div>
-            <textarea v-model="newAdminNote.description" placeholder="內容說明..." class="border border-gray-300 p-2 w-full rounded text-sm mb-2 focus:ring-1 focus:ring-blue-300 rows-2"></textarea>
-            <input v-model="newAdminNote.url" type="url" placeholder="主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300">
+            <textarea v-model="newAdminNote.description" placeholder="內容說明與防偽指紋..." class="border border-gray-300 p-2 w-full rounded text-sm mb-2 focus:ring-1 focus:ring-blue-300 rows-3"></textarea>
+            <input v-model="newAdminNote.url" type="url" placeholder="Telegram 主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300 bg-gray-50">
             
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div class="flex gap-4">
@@ -195,16 +222,18 @@
                   <span class="text-xs font-bold text-red-600">🔥 重要</span>
                 </label>
               </div>
-              <button @click="addAdminNote" class="bg-gray-800 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-gray-900 transition">新增私密紀錄</button>
+              <button @click="addAdminNote" class="bg-gray-800 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-gray-900 transition">💾 新增私密紀錄</button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div v-for="item in filteredAdminNotes" :key="item.id" :class="['relative p-5 rounded-xl shadow-sm hover:shadow-md transition duration-300 flex flex-col', item.is_important ? 'bg-red-50 border border-red-300' : 'bg-white border border-gray-200']">
+              
               <div class="absolute -top-3 -right-2 flex gap-1">
                 <span v-if="item.is_pinned" class="bg-yellow-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">📌 置頂</span>
                 <span v-if="item.is_important" class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">🔥 重要</span>
               </div>
+              
               <div class="text-[10px] text-gray-400 mb-2 flex justify-between items-center font-mono">
                 <span>🕒 {{ formatDate(item.created_at) }}</span>
                 <div class="flex gap-2">
@@ -212,17 +241,25 @@
                   <button @click="deleteAdminNote(item.id)" class="text-red-500 hover:text-red-700 underline font-bold">刪除</button>
                 </div>
               </div>
+              
               <h5 :class="['text-lg font-bold mb-1', item.is_important ? 'text-red-700' : 'text-gray-900']">{{ item.title }}</h5>
               <p class="text-sm text-gray-600 whitespace-pre-wrap flex-1">{{ item.description }}</p>
+              
               <div class="mt-3 flex flex-wrap gap-2">
                 <a v-if="item.url" :href="item.url" target="_blank" :class="[themeObj.bg, 'text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-80 transition-opacity']">主要網址 🚀</a>
                 <a v-for="(link, index) in item.links || []" :key="index" :href="link.url" target="_blank" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors">{{ link.name || '參考網址' }}</a>
               </div>
             </div>
-            <div v-if="filteredAdminNotes.length === 0" class="col-span-1 md:col-span-2 text-center py-10 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-white opacity-60">這個分頁目前沒有任何私密紀錄。</div>
+            
+            <div v-if="filteredAdminNotes.length === 0" class="col-span-1 md:col-span-2 text-center py-10 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-white opacity-60">
+              這個分頁目前沒有任何私密紀錄。
+            </div>
           </div>
         </div>
-        <div v-else class="text-center py-6 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">👆 請在上方選擇或新增一個分頁。</div>
+
+        <div v-else class="text-center py-6 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+          👆 請在上方選擇或新增一個分頁。
+        </div>
       </section>
 
       <section class="border-b pb-6">
@@ -476,47 +513,64 @@ const siteSortOrder = ref('newest')
 
 // ====== 🌟 獨立的 Telegram 上傳狀態變數 ======
 const tgTopicId = ref('')
+const tgCustomCaption = ref('') // 自訂上傳說明
 const isUploading = ref(false)
 const uploadStatus = ref('')
 const tgUploadResult = ref(null)
+const selectedFile = ref(null) // 存放選擇的檔案
 
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
+// 檔案選擇器 (先選檔，不直接傳)
+const selectFile = (event) => {
+  selectedFile.value = event.target.files[0]
+  if (selectedFile.value) {
+    uploadStatus.value = `📦 已選擇檔案：${selectedFile.value.name} (${(selectedFile.value.size / 1024 / 1024).toFixed(2)} MB)。請確認資料後點擊「確認上傳」。`
+    tgUploadResult.value = null
+  } else {
+    uploadStatus.value = ''
+  }
+}
 
+// 實際發送上傳請求
+const submitUpload = async () => {
+  if (!selectedFile.value) return
   if (!tgTopicId.value) {
-    alert('請先輸入 Telegram Topic ID (月份資料夾代碼)')
-    event.target.value = '' 
-    return
+    return alert('請先輸入 Telegram Topic ID (月份資料夾代碼)')
   }
 
   isUploading.value = true
-  uploadStatus.value = '大檔案上傳中，請保持網頁開啟 (可能需要幾分鐘)...'
+  uploadStatus.value = '⏳ 大檔案努力上傳中，請保持網頁開啟 (可能需要幾分鐘)...'
   tgUploadResult.value = null
 
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', selectedFile.value)
   formData.append('topic_id', tgTopicId.value)
+  
+  // 組裝完整的 Telegram 訊息 Caption
+  const uploadTime = dayjs().format('YYYY/MM/DD HH:mm')
+  let captionText = `📂 錄音檔：${selectedFile.value.name}\n🕒 上傳時間：${uploadTime}`
+  if (tgCustomCaption.value) {
+    captionText += `\n📝 說明：${tgCustomCaption.value}`
+  }
+  formData.append('caption', captionText) // 傳送給後端
 
   try {
-    // 發送請求，確保網址正確且處理各種回應
     const response = await fetch('https://tg-uploader-api.onrender.com/upload/', {
       method: 'POST',
       body: formData
     })
 
-    // 檢查 Header，如果不是 JSON (代表 Render 給了 HTML 錯誤頁面)
     const contentType = response.headers.get("content-type")
     if (!contentType || !contentType.includes("application/json")) {
       const errorText = await response.text()
-      throw new Error(`伺服器未回傳正確格式，可能正在休眠或尚未準備好 (HTTP ${response.status})。請先至最下方點擊 [喚醒所有 Render] 並等待 60 秒後再試。`)
+      throw new Error(`伺服器尚未準備好 (HTTP ${response.status})。請點擊「獨立喚醒 TG 上傳伺服器」並等待倒數結束。`)
     }
 
     const data = await response.json()
 
     if (data.success) {
       tgUploadResult.value = data
-      uploadStatus.value = '✅ 上傳成功！'
+      uploadStatus.value = '' // 清空狀態，讓專屬的成功卡片顯示
+      tgCustomCaption.value = '' // 清空說明
     } else {
       throw new Error(data.detail || data.error || '未知錯誤')
     }
@@ -525,7 +579,6 @@ const handleFileUpload = async (event) => {
     uploadStatus.value = `❌ 上傳失敗: ${error.message}`
   } finally {
     isUploading.value = false
-    event.target.value = '' 
   }
 }
 
@@ -540,14 +593,37 @@ const copyToClipboard = async (text) => {
 
 const saveTgResultToTodo = async () => {
   if (!tgUploadResult.value) return
-  const content = `[TG備份] ${tgUploadResult.value.filename}\n指紋: ${tgUploadResult.value.file_hash}`
+  const content = `[TG證據] ${tgUploadResult.value.filename}\n指紋: ${tgUploadResult.value.file_hash}`
   await supabase.from('todos').insert([{ 
     content: content, 
     url: tgUploadResult.value.telegram_link,
     due_date: null
   }])
   loadTodos()
-  alert('✅ 已快速加入暫存清單 (To-Do)！')
+  alert('✅ 已快速加入暫存清單 (To-Do)！可以作為日後新增公告的草稿。')
+}
+
+// 獨立 TG 伺服器喚醒邏輯
+const tgWakeUpCountdown = ref(0)
+const wakeUpTgServer = async () => {
+  tgWakeUpCountdown.value = 60
+  
+  // 戳一下 TG Server 喚醒它
+  try {
+    const urlObj = new URL('https://tg-uploader-api.onrender.com/')
+    urlObj.searchParams.append('_ping_ts', Date.now().toString())
+    await fetch(urlObj.toString(), { method: 'GET', mode: 'no-cors', cache: 'no-store' })
+  } catch (e) { console.log('TG 喚醒請求發出') }
+
+  // 60秒倒數計時器
+  const timer = setInterval(() => {
+    tgWakeUpCountdown.value--
+    if (tgWakeUpCountdown.value <= 0) {
+      clearInterval(timer)
+      showRenderToast.value = true // 彈出浮動通知
+      setTimeout(() => { showRenderToast.value = false }, 10000)
+    }
+  }, 1000)
 }
 
 // ====== 後台私密分頁變數 ======
