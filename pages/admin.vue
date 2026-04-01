@@ -57,6 +57,37 @@
       </section>
 
       <section class="border-b pb-6">
+        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+          🏷️ 前台入口分類管理
+          <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded shadow-sm border border-gray-200">控制前台的科目頁籤</span>
+        </h3>
+
+        <div class="flex flex-wrap items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200 min-h-[56px]">
+          <div v-for="cat in postCategories" :key="cat.id" class="relative group flex items-center">
+            
+            <div v-if="editingCatId === cat.id" class="flex items-center bg-white border-2 border-blue-400 rounded-full px-2 py-1 shadow-sm">
+              <input v-model="editingCatIcon" class="w-8 text-sm outline-none px-1 text-center" placeholder="圖示">
+              <input v-model="editingCatName" @keyup.enter="saveCatName(cat)" class="w-20 text-sm outline-none px-1" placeholder="名稱">
+              <button @click="saveCatName(cat)" class="text-green-600 hover:bg-green-100 p-1 rounded-full text-xs">✔</button>
+              <button @click="editingCatId = null" class="text-red-500 hover:bg-red-100 p-1 rounded-full text-xs">✖</button>
+            </div>
+            
+            <div v-else class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-full font-bold text-sm flex items-center gap-1.5 cursor-default shadow-sm hover:bg-gray-100 transition-colors">
+              <span>{{ cat.icon }}</span> {{ cat.name }}
+              <span @click="startEditCat(cat)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-blue-500 transition-opacity ml-1 bg-black/10 px-1.5 py-0.5 rounded cursor-pointer">✎</span>
+              <span @click="deleteCategory(cat.id)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity bg-black/10 px-1.5 py-0.5 rounded cursor-pointer">✖</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center ml-auto bg-white border border-gray-300 rounded-full overflow-hidden shadow-sm">
+            <input v-model="newCatIcon" type="text" placeholder="圖示(💻)" class="text-sm px-2 py-2 w-20 focus:outline-none border-r border-gray-200 text-center">
+            <input v-model="newCatName" type="text" placeholder="+ 新增名稱" class="text-sm px-3 py-2 w-28 md:w-32 focus:outline-none" @keyup.enter="addCategory">
+            <button @click="addCategory" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 text-sm font-bold transition-colors border-l border-gray-300">新增</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-b pb-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
           <h3 class="text-xl font-semibold flex items-center gap-2">
             🎙️ Telegram 錄音證據批次上傳中心
@@ -116,7 +147,6 @@
                 📝 一鍵全部加入「TG 獨立暫存清單」
               </button>
             </div>
-            
             <ul class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
               <li v-for="(res, idx) in tgUploadResults" :key="idx" class="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
                 <p><span class="font-bold text-gray-600">檔名：</span>{{ res.filename }}</p>
@@ -169,14 +199,14 @@
 
         <div class="flex flex-wrap items-center gap-2 mb-6 bg-gray-50 p-2 rounded-lg border border-gray-200 min-h-[56px]">
           <div v-for="tab in adminTabs" :key="tab.id" class="relative group flex items-center">
-            <div v-if="editingTabId === tab.id" class="flex items-center bg-white border-2 border-blue-400 rounded-full px-2 py-1 shadow-sm">
-              <input v-model="editingTabName" @keyup.enter="saveTabName(tab)" class="w-24 text-sm outline-none px-1">
-              <button @click="saveTabName(tab)" class="text-green-600 hover:bg-green-100 p-1 rounded-full text-xs">✔</button>
-              <button @click="editingTabId = null" class="text-red-500 hover:bg-red-100 p-1 rounded-full text-xs">✖</button>
+            <div v-if="editingAdminTabId === tab.id" class="flex items-center bg-white border-2 border-blue-400 rounded-full px-2 py-1 shadow-sm">
+              <input v-model="editingAdminTabName" @keyup.enter="saveAdminTabName(tab)" class="w-24 text-sm outline-none px-1">
+              <button @click="saveAdminTabName(tab)" class="text-green-600 hover:bg-green-100 p-1 rounded-full text-xs">✔</button>
+              <button @click="editingAdminTabId = null" class="text-red-500 hover:bg-red-100 p-1 rounded-full text-xs">✖</button>
             </div>
             <button v-else @click="activeAdminTab = tab.id" :class="[activeAdminTab === tab.id ? themeObj.bg + ' text-white shadow-md' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100', 'px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-1.5']">
               {{ tab.name }}
-              <span @click.stop="startEditTab(tab)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-blue-300 transition-opacity ml-1 bg-black/10 px-1.5 py-0.5 rounded">✎</span>
+              <span @click.stop="startEditAdminTab(tab)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-blue-300 transition-opacity ml-1 bg-black/10 px-1.5 py-0.5 rounded">✎</span>
               <span @click.stop="deleteAdminTab(tab.id)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity bg-black/10 px-1.5 py-0.5 rounded">✖</span>
             </button>
           </div>
@@ -226,7 +256,7 @@
           <div v-else class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
             <div class="flex gap-2 mb-2"><input v-model="newAdminNote.title" type="text" placeholder="標題 (必填)" class="border border-gray-300 p-2 w-full rounded text-sm focus:ring-1 focus:ring-blue-300"></div>
             <textarea v-model="newAdminNote.description" placeholder="內容說明或貼上暫存清單的資訊..." class="border border-gray-300 p-2 w-full rounded text-sm mb-2 focus:ring-1 focus:ring-blue-300 rows-3"></textarea>
-            <input v-model="newAdminNote.url" type="url" placeholder="Telegram 主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300 bg-gray-50">
+            <input v-model="newAdminNote.url" type="url" placeholder="主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300 bg-gray-50">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer"><input v-model="newAdminNote.is_pinned" type="checkbox" class="w-4 h-4 text-blue-600 rounded"><span class="text-xs font-bold text-yellow-600">📌 置頂</span></label>
@@ -303,10 +333,10 @@
           <div class="space-y-4">
             <div class="flex flex-col md:flex-row gap-3">
               <div class="md:w-1/3">
-                <label class="block text-sm text-gray-600 mb-1">所屬科目</label>
+                <label class="block text-sm text-gray-600 mb-1">所屬前台分類</label>
                 <select v-model="newPost.category" :class="['border border-gray-300 p-2 w-full rounded bg-white focus:ring-2 focus:border-transparent focus:outline-none', themeObj.ring]">
-                  <option value="資訊科技">💻 資訊科技</option>
-                  <option value="英語">🔤 英語</option>
+                  <option v-for="cat in postCategories" :key="cat.id" :value="cat.name">{{ cat.icon }} {{ cat.name }}</option>
+                  <option v-if="postCategories.length === 0" value="" disabled>請先在上方新增分類</option>
                 </select>
               </div>
               <div class="flex-1">
@@ -356,8 +386,7 @@
             <div class="md:w-1/3">
               <label class="block text-xs text-gray-500 mb-1">分類</label>
               <select v-model="editingPost.category" class="border border-gray-300 p-2 w-full rounded bg-white text-sm">
-                <option value="資訊科技">💻 資訊科技</option>
-                <option value="英語">🔤 英語</option>
+                <option v-for="cat in postCategories" :key="cat.id" :value="cat.name">{{ cat.icon }} {{ cat.name }}</option>
               </select>
             </div>
             <div class="flex-1">
@@ -410,7 +439,7 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span v-if="item.is_pinned" class="bg-yellow-400 text-white text-[10px] px-1.5 py-0.5 rounded">📌</span>
                 <span v-if="item.is_important" class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">🔥</span>
-                <span :class="item.category === '資訊科技' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'" class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">{{ item.category }}</span>
+                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">{{ item.category }}</span>
                 <span class="font-bold text-gray-800 text-base" :class="{'text-red-700': item.is_important}">{{ item.title }}</span>
               </div>
               <div class="flex flex-col text-xs text-gray-500 mt-1 gap-1">
@@ -501,6 +530,52 @@ const parseCSVString = (str) => {
     arr[row][col] += cc
   }
   return arr.filter(r => r.length > 1 || r[0] !== '') 
+}
+
+// ====== 🌟 前台分類管理 ======
+const postCategories = ref([])
+const newCatName = ref('')
+const newCatIcon = ref('')
+const editingCatId = ref(null)
+const editingCatName = ref('')
+const editingCatIcon = ref('')
+
+const loadPostCategories = async () => {
+  const { data } = await supabase.from('post_categories').select('*').order('id', { ascending: true })
+  if (data) {
+    postCategories.value = data
+    // 若沒有選擇新公告的分類，且有資料，預設選第一筆
+    if (!newPost.value.category && data.length > 0) {
+      newPost.value.category = data[0].name
+    }
+  }
+}
+
+const addCategory = async () => {
+  if (!newCatName.value) return alert('分類名稱不可為空！')
+  await supabase.from('post_categories').insert([{ name: newCatName.value, icon: newCatIcon.value || '📌' }])
+  newCatName.value = ''
+  newCatIcon.value = ''
+  loadPostCategories()
+}
+
+const deleteCategory = async (id) => {
+  if (!confirm('注意！刪除此分類不會刪除底下的文章，但前台可能無法顯示該分類。確定要刪除嗎？')) return
+  await supabase.from('post_categories').delete().eq('id', id)
+  loadPostCategories()
+}
+
+const startEditCat = (cat) => {
+  editingCatId.value = cat.id
+  editingCatName.value = cat.name
+  editingCatIcon.value = cat.icon
+}
+
+const saveCatName = async (cat) => {
+  if (!editingCatName.value) return alert('分類名稱不可為空！')
+  await supabase.from('post_categories').update({ name: editingCatName.value, icon: editingCatIcon.value }).eq('id', cat.id)
+  editingCatId.value = null
+  loadPostCategories()
 }
 
 // ====== 🌟 獨立的 Telegram 上傳狀態變數 (支援多檔案) ======
@@ -743,13 +818,13 @@ const handleTodoCsvImport = async (event) => {
   reader.readAsText(file)
 }
 
-// ====== 其餘邏輯 (私密分頁、前台公告、保活等) 保持不變 ======
-const adminTabs = ref([]); const activeAdminTab = ref(null); const newAdminTabName = ref(''); const editingTabId = ref(null); const editingTabName = ref('')
+// ====== 其餘邏輯 (私密分頁、前台公告、保活等) ======
+const adminTabs = ref([]); const activeAdminTab = ref(null); const newAdminTabName = ref(''); const editingAdminTabId = ref(null); const editingAdminTabName = ref('')
 const currentTabName = computed(() => adminTabs.value.find(t => t.id === activeAdminTab.value)?.name || '')
 const adminNotes = ref([]); const newAdminNote = ref({ title: '', description: '', url: '', is_important: false, is_pinned: false, links: [] }); const editingAdminNote = ref(null)
 const filteredAdminNotes = computed(() => adminNotes.value.filter(n => n.tab_id === activeAdminTab.value).sort((a, b) => a.is_pinned !== b.is_pinned ? (a.is_pinned ? -1 : 1) : new Date(b.created_at) - new Date(a.created_at)))
 
-const getEmptyPost = () => ({ title: '', description: '', url: '', category: '資訊科技', is_important: false, is_pinned: false, links: [] })
+const getEmptyPost = () => ({ title: '', description: '', url: '', category: '', is_important: false, is_pinned: false, links: [] })
 const newPost = ref(getEmptyPost()); const adminBulletins = ref([]); const editingPost = ref(null)  
 const showRenderToast = ref(false); const visitorLogs = ref([]); const keepAliveUrls = ref([]); const newKeepAlive = ref({ name: '', url: '', home_url: '', platform: 'Vercel' }); const isPinging = ref(false); const isPingingPlatform = ref(''); const pingResult = ref('')
 const vercelUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Vercel' || !item.platform)); const renderUrls = computed(() => keepAliveUrls.value.filter(item => item.platform === 'Render'))
@@ -758,7 +833,7 @@ const login = () => {
   const correctPassword = getTodayPassword()
   if (inputPassword.value === correctPassword) {
     isAuthenticated.value = true; errorMsg.value = ''
-    loadSettings(); loadAdminTabs(); loadAdminNotes(); loadBulletins(); loadTodos(); loadTgTodos(); loadKeepAliveUrls(); loadVisitorLogs()
+    loadSettings(); loadPostCategories(); loadAdminTabs(); loadAdminNotes(); loadBulletins(); loadTodos(); loadTgTodos(); loadKeepAliveUrls(); loadVisitorLogs()
   } else { errorMsg.value = '密碼錯誤！' }
 }
 const logout = () => { isAuthenticated.value = false; inputPassword.value = ''; navigateTo('/') }
@@ -787,11 +862,11 @@ const deleteAdminTab = async (id) => {
   if (!confirm('確定刪除此分頁？')) return
   await supabase.from('admin_tabs').delete().eq('id', id); if (activeAdminTab.value === id) activeAdminTab.value = null; loadAdminTabs(); loadAdminNotes()
 }
-const startEditTab = (tab) => { editingTabId.value = tab.id; editingTabName.value = tab.name }
-const saveTabName = async (tab) => {
-  if (!editingTabName.value) return alert('名稱不能為空！')
-  const { error } = await supabase.from('admin_tabs').update({ name: editingTabName.value }).eq('id', tab.id)
-  if (!error) { editingTabId.value = null; loadAdminTabs() } else alert('更新失敗')
+const startEditAdminTab = (tab) => { editingAdminTabId.value = tab.id; editingAdminTabName.value = tab.name }
+const saveAdminTabName = async (tab) => {
+  if (!editingAdminTabName.value) return alert('名稱不能為空！')
+  const { error } = await supabase.from('admin_tabs').update({ name: editingAdminTabName.value }).eq('id', tab.id)
+  if (!error) { editingAdminTabId.value = null; loadAdminTabs() } else alert('更新失敗')
 }
 
 // 私密分頁 CSV
@@ -841,9 +916,21 @@ const removeLinkFromObj = (obj, index) => { obj.links.splice(index, 1) }
 const loadBulletins = async () => { const { data } = await supabase.from('bulletins').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }); if (data) adminBulletins.value = data }
 const addPost = async () => {
   if (!newPost.value.title || !newPost.value.url) return alert('標題與網址必填！')
-  await supabase.from('bulletins').insert([{ ...newPost.value }]); alert('發布成功！'); newPost.value = getEmptyPost(); loadBulletins() 
+  if (!newPost.value.category) return alert('請選擇前台分類！')
+  await supabase.from('bulletins').insert([{ ...newPost.value }]); alert('發布成功！'); newPost.value = getEmptyPost()
+  if (postCategories.value.length > 0) newPost.value.category = postCategories.value[0].name
+  loadBulletins() 
 }
 const deletePost = async (id) => { if (confirm('確定刪除？')) { await supabase.from('bulletins').delete().eq('id', id); loadBulletins() } }
+const startEdit = (post) => { editingPost.value = JSON.parse(JSON.stringify({ ...post, links: post.links || [] })) }
+const cancelEdit = () => { editingPost.value = null }
+const saveEdit = async () => {
+  if (!editingPost.value.title || !editingPost.value.url) return alert('標題與網址必填！')
+  const { id, title, description, url, category, is_important, is_pinned, links } = editingPost.value
+  await supabase.from('bulletins').update({ title, description, url, category, is_important, is_pinned, links }).eq('id', id)
+  alert('更新成功！'); editingPost.value = null; loadBulletins() 
+}
+
 const formatDate = (dateString) => dayjs(dateString).format('YYYY/MM/DD HH:mm')
 
 // 外部保活

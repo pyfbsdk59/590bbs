@@ -1,21 +1,15 @@
 <template>
   <div>
-    <div class="flex justify-center space-x-2 md:space-x-4 mt-6 mb-8">
+    <div class="flex justify-center space-x-2 md:space-x-4 mt-6 mb-8 flex-wrap gap-y-3">
       <button 
-        @click="activeCategory = '資訊科技'"
-        :class="activeCategory === '資訊科技' ? [themeObj.bg, 'text-white shadow-md'] : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'"
-        class="px-6 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2"
+        v-for="cat in categories" :key="cat.id"
+        @click="activeCategory = cat.name"
+        :class="activeCategory === cat.name ? [themeObj.bg, 'text-white shadow-md'] : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'"
+        class="px-5 py-2.5 md:px-6 md:py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2"
       >
-        <span>💻</span> 資訊科技入口
+        <span>{{ cat.icon }}</span> {{ cat.name }}
       </button>
-      
-      <button 
-        @click="activeCategory = '英語'"
-        :class="activeCategory === '英語' ? [themeObj.bg, 'text-white shadow-md'] : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'"
-        class="px-6 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2"
-      >
-        <span>🔤</span> 英語學習入口
-      </button>
+      <div v-if="categories.length === 0" class="text-sm text-gray-400">目前尚無分類，請至後台新增。</div>
     </div>
 
     <div v-if="filteredBulletins.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
@@ -68,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { themeConfig } from '@/utils/theme'
 
 const supabase = useSupabaseClient()
@@ -76,7 +70,18 @@ const dayjs = useDayjs()
 const currentTheme = useState('currentTheme')
 const themeObj = computed(() => themeConfig[currentTheme.value] || themeConfig.purple)
 
-const activeCategory = ref('資訊科技')
+const activeCategory = ref('')
+
+// 取得前台動態分類
+const { data: categories } = await useAsyncData('categories', async () => {
+  const { data } = await supabase.from('post_categories').select('*').order('id', { ascending: true })
+  return data || []
+})
+
+// 預設選擇第一個分類
+if (categories.value && categories.value.length > 0) {
+  activeCategory.value = categories.value[0].name
+}
 
 // 取得網站全域設定 (包含排序方式)
 const { data: settings } = await useAsyncData('site_settings', async () => {
@@ -91,7 +96,6 @@ const { data: bulletins } = await useAsyncData('bulletins', async () => {
   return data
 })
 
-// 時間格式化
 const formatDate = (dateString) => {
   return dayjs(dateString).format('YYYY/MM/DD HH:mm')
 }
@@ -102,19 +106,16 @@ const filteredBulletins = computed(() => {
   let filtered = bulletins.value.filter(b => b.category === activeCategory.value)
   
   return filtered.sort((a, b) => {
-    // 📌 規則 1: 置頂永遠最優先
     if (a.is_pinned !== b.is_pinned) {
       return a.is_pinned ? -1 : 1 
     }
-    
-    // 🕒 規則 2: 依照後台設定的時間排序
     const dateA = new Date(a.created_at).getTime()
     const dateB = new Date(b.created_at).getTime()
     
     if (sortOrder.value === 'oldest') {
-      return dateA - dateB // 最舊在前
+      return dateA - dateB
     } else {
-      return dateB - dateA // 最新在前 (預設)
+      return dateB - dateA
     }
   })
 })
