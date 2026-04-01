@@ -80,8 +80,8 @@
               <input v-model="tgTopicId" type="number" placeholder="例: 45" class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm">
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-bold text-indigo-900 mb-1">選擇上課錄音檔 (可多選)</label>
-              <input type="file" accept="audio/*" multiple ref="tgFileInput" @change="selectFiles" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-200 file:text-indigo-800 hover:file:bg-indigo-300 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
+              <label class="block text-sm font-bold text-indigo-900 mb-1">選擇聲音檔 (支援 .wav, .m4a, .mp3, .aac 等各式音檔，可多選)</label>
+              <input type="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.amr,.wma" multiple ref="tgFileInput" @change="selectFiles" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-200 file:text-indigo-800 hover:file:bg-indigo-300 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
             </div>
           </div>
 
@@ -95,7 +95,7 @@
           </div>
 
           <div class="mb-4">
-             <label class="block text-sm font-bold text-indigo-900 mb-1">錄音檔補充說明 (將套用於本次批次的所有檔案)</label>
+             <label class="block text-sm font-bold text-indigo-900 mb-1">檔案補充說明 (將套用於本次批次的所有檔案)</label>
              <textarea v-model="tgCustomCaption" placeholder="例如：刑法總則第五章 (可留空)..." class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm rows-2"></textarea>
           </div>
 
@@ -346,7 +346,65 @@
           </div>
         </div>
 
-        <ul class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+        <div v-if="editingPost" class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm space-y-4 mb-4 animate-fade-in relative">
+          <div class="flex justify-between items-center border-b border-yellow-200 pb-2">
+            <h4 class="font-bold text-gray-800">✏️ 編輯前台教學內容</h4>
+            <button @click="cancelEdit" class="text-gray-500 hover:text-red-500 text-sm font-bold">✖ 取消</button>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="md:w-1/3">
+              <label class="block text-xs text-gray-500 mb-1">分類</label>
+              <select v-model="editingPost.category" class="border border-gray-300 p-2 w-full rounded bg-white text-sm">
+                <option value="資訊科技">💻 資訊科技</option>
+                <option value="英語">🔤 英語</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs text-gray-500 mb-1">標題</label>
+              <input v-model="editingPost.title" type="text" class="border border-gray-300 p-2 w-full rounded text-sm">
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="editingPost.is_pinned" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
+              <span class="text-sm font-bold text-yellow-600">📌 置頂</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="editingPost.is_important" type="checkbox" class="w-4 h-4 text-red-600 rounded">
+              <span class="text-sm font-bold text-red-600">🔥 重要</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">說明</label>
+            <textarea v-model="editingPost.description" class="border border-gray-300 p-2 w-full rounded text-sm rows-2"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">主要網址</label>
+            <input v-model="editingPost.url" type="url" class="border border-gray-300 p-2 w-full rounded text-sm">
+          </div>
+
+          <div class="bg-white p-3 rounded border border-gray-200">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs text-gray-500 font-bold">額外相關網址</label>
+              <button @click="addLinkToObj(editingPost)" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">+ 新增</button>
+            </div>
+            <div v-for="(link, index) in editingPost.links" :key="index" class="flex gap-2 mb-2 items-center">
+              <input v-model="link.name" type="text" placeholder="名稱" class="border border-gray-300 p-1.5 text-sm rounded w-1/3">
+              <input v-model="link.url" type="url" placeholder="https://..." class="border border-gray-300 p-1.5 text-sm rounded flex-1">
+              <button @click="removeLinkFromObj(editingPost, index)" class="text-red-500 hover:text-red-700 font-bold px-2">✖</button>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-3">
+            <button @click="cancelEdit" class="px-4 py-2 rounded text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors font-medium">取消</button>
+            <button @click="saveEdit" :class="[themeObj.bg, themeObj.hover, 'text-white px-4 py-2 rounded text-sm transition-colors font-medium']">儲存變更</button>
+          </div>
+        </div>
+
+        <ul v-else class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
           <li v-for="item in adminBulletins" :key="item.id" class="flex flex-col md:flex-row justify-between md:items-center bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-shadow" :class="item.is_important ? 'border-red-300 bg-red-50' : 'border-gray-200'">
             <div class="flex flex-col mb-2 md:mb-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -361,6 +419,7 @@
               </div>
             </div>
             <div class="flex gap-2 self-end md:self-auto mt-2 md:mt-0">
+              <button @click="startEdit(item)" :class="['text-sm px-3 py-1 rounded border transition-colors font-medium', themeObj.text, themeObj.bg.replace('bg-', 'border-'), themeObj.bg.replace('bg-', 'hover:bg-').replace('600', '50')]">編輯</button>
               <button @click="deletePost(item.id)" class="text-red-500 hover:bg-red-500 hover:text-white text-sm px-3 py-1 rounded border border-transparent hover:border-red-600 transition-colors font-medium">刪除</button>
             </div>
           </li>
@@ -388,6 +447,7 @@
           <select v-model="newKeepAlive.platform" :class="['border border-gray-300 p-2 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]"><option value="Vercel">Vercel</option><option value="Render">Render</option></select>
           <input v-model="newKeepAlive.name" type="text" placeholder="名稱" :class="['border border-gray-300 p-2 w-full md:w-32 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           <input v-model="newKeepAlive.url" type="url" placeholder="喚醒 API" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+          <input v-model="newKeepAlive.home_url" type="url" placeholder="首頁網址" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           <button @click="addKeepAliveUrl" :class="[themeObj.bg, themeObj.hover, 'text-white px-5 py-2 rounded text-sm font-medium shadow-sm']">新增</button>
         </div>
 
