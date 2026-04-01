@@ -41,7 +41,7 @@
               </select>
             </div>
             <div class="md:w-1/4">
-              <label class="block text-sm text-gray-600 mb-1">前台公告排序方式</label>
+              <label class="block text-sm text-gray-600 mb-1">前台公告排序</label>
               <select v-model="siteSortOrder" :class="['border border-gray-300 p-2 w-full rounded focus:outline-none focus:ring-2 focus:border-transparent bg-white', themeObj.ring]">
                 <option value="newest">🕒 最新公告在前</option>
                 <option value="oldest">🕰️ 最舊公告在前</option>
@@ -58,19 +58,64 @@
 
       <section class="border-b pb-6">
         <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+          🎙️ Telegram 錄音大檔上傳中心
+          <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded shadow-sm border border-indigo-200">雲端保全工具</span>
+        </h3>
+        
+        <div class="bg-indigo-50 border border-indigo-200 p-4 md:p-6 rounded-xl shadow-sm relative">
+          <div class="mb-4 text-xs text-indigo-700 bg-white p-3 rounded border border-indigo-100 flex items-start gap-2">
+            <span class="text-lg">💡</span>
+            <p><strong>上傳前請確認：</strong>請先在最下方的「外部網站保活設定」中，按下 **[🛸 喚醒所有 Render]** 並等待 60 秒浮動通知出現後再進行上傳，避免伺服器剛從休眠啟動導致上傳失敗或逾時。</p>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-end gap-4">
+            <div class="md:w-1/3">
+              <label class="block text-sm font-bold text-indigo-900 mb-1">目標 Topic ID (月份資料夾代碼)</label>
+              <input v-model="tgTopicId" type="number" placeholder="例如: 45" class="border border-indigo-300 p-2 w-full rounded focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white shadow-sm">
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-bold text-indigo-900 mb-1">選擇上課錄音檔 (.wav / .mp3)</label>
+              <input type="file" accept="audio/*" @change="handleFileUpload" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors shadow-sm bg-white border border-indigo-300 rounded">
+            </div>
+          </div>
+
+          <div v-if="uploadStatus" class="mt-4 flex items-center gap-3 p-3 rounded-lg" :class="uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-300'">
+            <div v-if="isUploading" class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm font-bold">{{ uploadStatus }}</p>
+          </div>
+
+          <div v-if="tgUploadResult" class="mt-4 bg-white border-2 border-green-400 p-4 rounded-lg shadow-sm animate-fade-in">
+            <h4 class="text-green-700 font-bold mb-2 flex items-center gap-1">✅ 上傳成功！您的法律證據已保全</h4>
+            <div class="space-y-2 text-sm">
+              <p><span class="font-bold text-gray-600">檔名：</span>{{ tgUploadResult.filename }}</p>
+              <p class="flex items-center gap-2"><span class="font-bold text-gray-600">連結：</span> <a :href="tgUploadResult.telegram_link" target="_blank" class="text-blue-600 hover:underline truncate">{{ tgUploadResult.telegram_link }}</a></p>
+              <p class="flex flex-col"><span class="font-bold text-gray-600">SHA-256 數位指紋：</span> <code class="bg-gray-100 p-1.5 rounded text-xs text-gray-800 mt-1 break-all">{{ tgUploadResult.file_hash }}</code></p>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button @click="copyToClipboard(`錄音檔：${tgUploadResult.filename}\n連結：${tgUploadResult.telegram_link}\n指紋：${tgUploadResult.file_hash}`)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm">
+                📋 複製完整資訊
+              </button>
+              <button @click="saveTgResultToTodo" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors shadow-sm">
+                📝 快速加入「暫存清單 (To-Do)」
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-b pb-6">
+        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
           🔒 後台專屬私密分頁 
           <span class="text-xs bg-gray-800 text-white px-2 py-1 rounded shadow-sm">僅限管理員可見</span>
         </h3>
 
         <div class="flex flex-wrap items-center gap-2 mb-6 bg-gray-50 p-2 rounded-lg border border-gray-200 min-h-[56px]">
           <div v-for="tab in adminTabs" :key="tab.id" class="relative group flex items-center">
-            
             <div v-if="editingTabId === tab.id" class="flex items-center bg-white border-2 border-blue-400 rounded-full px-2 py-1 shadow-sm">
               <input v-model="editingTabName" @keyup.enter="saveTabName(tab)" class="w-24 text-sm outline-none px-1">
               <button @click="saveTabName(tab)" class="text-green-600 hover:bg-green-100 p-1 rounded-full text-xs">✔</button>
               <button @click="editingTabId = null" class="text-red-500 hover:bg-red-100 p-1 rounded-full text-xs">✖</button>
             </div>
-
             <button v-else @click="activeAdminTab = tab.id" :class="[activeAdminTab === tab.id ? themeObj.bg + ' text-white shadow-md' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100', 'px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-1.5']">
               {{ tab.name }}
               <span @click.stop="startEditTab(tab)" class="text-[10px] opacity-0 group-hover:opacity-100 hover:text-blue-300 transition-opacity ml-1 bg-black/10 px-1.5 py-0.5 rounded">✎</span>
@@ -133,29 +178,11 @@
           </div>
 
           <div v-else class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-            
-            <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg mb-4">
-              <div class="flex flex-col md:flex-row md:items-center gap-3">
-                <div class="md:w-1/3">
-                  <label class="block text-xs font-bold text-indigo-800 mb-1">📂 自動上傳錄音至 Telegram</label>
-                  <input v-model="tgTopicId" type="number" placeholder="輸入 Topic ID (月份資料夾代碼)" class="border border-indigo-300 p-1.5 w-full rounded text-sm focus:ring-1 focus:ring-indigo-400 bg-white">
-                </div>
-                <div class="flex-1">
-                  <label class="block text-xs font-bold text-transparent mb-1 select-none">選擇檔案</label>
-                  <input type="file" accept="audio/*" @change="handleFileUpload" :disabled="isUploading" class="block w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors">
-                </div>
-              </div>
-              <div v-if="uploadStatus" class="mt-2 flex items-center gap-2">
-                <div v-if="isUploading" class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <p :class="['text-xs font-bold', uploadStatus.includes('❌') ? 'text-red-500' : 'text-green-600']">{{ uploadStatus }}</p>
-              </div>
-            </div>
-
             <div class="flex gap-2 mb-2">
               <input v-model="newAdminNote.title" type="text" placeholder="標題 (必填)" class="border border-gray-300 p-2 w-full rounded text-sm focus:ring-1 focus:ring-blue-300">
             </div>
-            <textarea v-model="newAdminNote.description" placeholder="內容說明與防偽指紋..." class="border border-gray-300 p-2 w-full rounded text-sm mb-2 focus:ring-1 focus:ring-blue-300 rows-3"></textarea>
-            <input v-model="newAdminNote.url" type="url" placeholder="Telegram 主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300 bg-gray-50">
+            <textarea v-model="newAdminNote.description" placeholder="內容說明..." class="border border-gray-300 p-2 w-full rounded text-sm mb-2 focus:ring-1 focus:ring-blue-300 rows-2"></textarea>
+            <input v-model="newAdminNote.url" type="url" placeholder="主要網址 (選填)" class="border border-gray-300 p-2 w-full rounded text-sm mb-3 focus:ring-1 focus:ring-blue-300">
             
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div class="flex gap-4">
@@ -168,18 +195,16 @@
                   <span class="text-xs font-bold text-red-600">🔥 重要</span>
                 </label>
               </div>
-              <button @click="addAdminNote" class="bg-gray-800 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-gray-900 transition">💾 新增私密紀錄</button>
+              <button @click="addAdminNote" class="bg-gray-800 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-gray-900 transition">新增私密紀錄</button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div v-for="item in filteredAdminNotes" :key="item.id" :class="['relative p-5 rounded-xl shadow-sm hover:shadow-md transition duration-300 flex flex-col', item.is_important ? 'bg-red-50 border border-red-300' : 'bg-white border border-gray-200']">
-              
               <div class="absolute -top-3 -right-2 flex gap-1">
                 <span v-if="item.is_pinned" class="bg-yellow-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">📌 置頂</span>
                 <span v-if="item.is_important" class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">🔥 重要</span>
               </div>
-              
               <div class="text-[10px] text-gray-400 mb-2 flex justify-between items-center font-mono">
                 <span>🕒 {{ formatDate(item.created_at) }}</span>
                 <div class="flex gap-2">
@@ -187,25 +212,17 @@
                   <button @click="deleteAdminNote(item.id)" class="text-red-500 hover:text-red-700 underline font-bold">刪除</button>
                 </div>
               </div>
-              
               <h5 :class="['text-lg font-bold mb-1', item.is_important ? 'text-red-700' : 'text-gray-900']">{{ item.title }}</h5>
               <p class="text-sm text-gray-600 whitespace-pre-wrap flex-1">{{ item.description }}</p>
-              
               <div class="mt-3 flex flex-wrap gap-2">
-                <a v-if="item.url" :href="item.url" target="_blank" :class="[themeObj.bg, 'text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-80 transition-opacity']">打開 Telegram 音檔 🚀</a>
+                <a v-if="item.url" :href="item.url" target="_blank" :class="[themeObj.bg, 'text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-80 transition-opacity']">主要網址 🚀</a>
                 <a v-for="(link, index) in item.links || []" :key="index" :href="link.url" target="_blank" class="bg-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors">{{ link.name || '參考網址' }}</a>
               </div>
             </div>
-            
-            <div v-if="filteredAdminNotes.length === 0" class="col-span-1 md:col-span-2 text-center py-10 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-white opacity-60">
-              這個分頁目前沒有任何私密紀錄。
-            </div>
+            <div v-if="filteredAdminNotes.length === 0" class="col-span-1 md:col-span-2 text-center py-10 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-white opacity-60">這個分頁目前沒有任何私密紀錄。</div>
           </div>
         </div>
-
-        <div v-else class="text-center py-6 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-          👆 請在上方選擇或新增一個分頁。
-        </div>
+        <div v-else class="text-center py-6 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">👆 請在上方選擇或新增一個分頁。</div>
       </section>
 
       <section class="border-b pb-6">
@@ -231,9 +248,7 @@
             </div>
             <button @click="deleteTodo(todo.id)" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors">✖</button>
           </li>
-          <li v-if="todosList.length === 0" class="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
-            目前沒有任何待辦或暫存訊息。
-          </li>
+          <li v-if="todosList.length === 0" class="text-sm text-gray-400 py-4 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">目前沒有任何待辦或暫存訊息。</li>
         </ul>
       </section>
 
@@ -363,7 +378,6 @@
               <div class="flex flex-col text-xs text-gray-500 mt-1 gap-1">
                 <span>🕒 {{ formatDate(item.created_at) }}</span>
                 <span class="truncate max-w-xs md:max-w-md">🔗 {{ item.url }}</span>
-                <span v-if="item.links && item.links.length > 0" class="text-[10px] text-gray-400">+ 包含 {{ item.links.length }} 個額外網址</span>
               </div>
             </div>
             <div class="flex gap-2 self-end md:self-auto mt-2 md:mt-0">
@@ -397,8 +411,8 @@
             <option value="Render">Render 專案</option>
           </select>
           <input v-model="newKeepAlive.name" type="text" placeholder="網站名稱" :class="['border border-gray-300 p-2 w-full md:w-32 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
-          <input v-model="newKeepAlive.url" type="url" placeholder="喚醒 API 網址 (必填)" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
-          <input v-model="newKeepAlive.home_url" type="url" placeholder="首頁網址 (選填)" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+          <input v-model="newKeepAlive.url" type="url" placeholder="喚醒 API 網址" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
+          <input v-model="newKeepAlive.home_url" type="url" placeholder="首頁網址" :class="['border border-gray-300 p-2 flex-1 rounded text-sm focus:outline-none focus:ring-2 focus:border-transparent', themeObj.ring]">
           <button @click="addKeepAliveUrl" :class="[themeObj.bg, themeObj.hover, 'text-white px-5 py-2 rounded text-sm font-medium whitespace-nowrap shadow-sm']">新增</button>
         </div>
 
@@ -460,6 +474,82 @@ const marqueeText = ref('')
 const siteTheme = ref('purple')
 const siteSortOrder = ref('newest') 
 
+// ====== 🌟 獨立的 Telegram 上傳狀態變數 ======
+const tgTopicId = ref('')
+const isUploading = ref(false)
+const uploadStatus = ref('')
+const tgUploadResult = ref(null)
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  if (!tgTopicId.value) {
+    alert('請先輸入 Telegram Topic ID (月份資料夾代碼)')
+    event.target.value = '' 
+    return
+  }
+
+  isUploading.value = true
+  uploadStatus.value = '大檔案上傳中，請保持網頁開啟 (可能需要幾分鐘)...'
+  tgUploadResult.value = null
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('topic_id', tgTopicId.value)
+
+  try {
+    // 發送請求，確保網址正確且處理各種回應
+    const response = await fetch('https://tg-uploader-api.onrender.com/upload/', {
+      method: 'POST',
+      body: formData
+    })
+
+    // 檢查 Header，如果不是 JSON (代表 Render 給了 HTML 錯誤頁面)
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) {
+      const errorText = await response.text()
+      throw new Error(`伺服器未回傳正確格式，可能正在休眠或尚未準備好 (HTTP ${response.status})。請先至最下方點擊 [喚醒所有 Render] 並等待 60 秒後再試。`)
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
+      tgUploadResult.value = data
+      uploadStatus.value = '✅ 上傳成功！'
+    } else {
+      throw new Error(data.detail || data.error || '未知錯誤')
+    }
+  } catch (error) {
+    console.error('上傳失敗:', error)
+    uploadStatus.value = `❌ 上傳失敗: ${error.message}`
+  } finally {
+    isUploading.value = false
+    event.target.value = '' 
+  }
+}
+
+const copyToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    alert('✅ 已成功複製到剪貼簿！')
+  } catch (err) {
+    alert('❌ 複製失敗，請手動反白複製')
+  }
+}
+
+const saveTgResultToTodo = async () => {
+  if (!tgUploadResult.value) return
+  const content = `[TG備份] ${tgUploadResult.value.filename}\n指紋: ${tgUploadResult.value.file_hash}`
+  await supabase.from('todos').insert([{ 
+    content: content, 
+    url: tgUploadResult.value.telegram_link,
+    due_date: null
+  }])
+  loadTodos()
+  alert('✅ 已快速加入暫存清單 (To-Do)！')
+}
+
 // ====== 後台私密分頁變數 ======
 const adminTabs = ref([])
 const activeAdminTab = ref(null)
@@ -483,62 +573,6 @@ const filteredAdminNotes = computed(() => {
       return new Date(b.created_at) - new Date(a.created_at)
     })
 })
-
-// ====== 🌟 Telegram 上傳狀態變數 ======
-const tgTopicId = ref('')
-const isUploading = ref(false)
-const uploadStatus = ref('')
-
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  if (!tgTopicId.value) {
-    alert('請先輸入 Telegram Topic ID (月份資料夾代碼)')
-    event.target.value = '' 
-    return
-  }
-
-  isUploading.value = true
-  uploadStatus.value = '大檔案上傳中，請保持網頁開啟 (可能需要幾分鐘)...'
-
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('topic_id', tgTopicId.value)
-
-  try {
-    const response = await fetch('https://tg-uploader-api.onrender.com/upload/', {
-      method: 'POST',
-      body: formData
-    })
-
-    if (!response.ok) throw new Error(`伺服器錯誤: ${response.status}`)
-
-    const data = await response.json()
-
-    if (data.success) {
-      // 自動填入表單
-      if (!newAdminNote.value.title) {
-        newAdminNote.value.title = data.filename || '上課錄音備份'
-      }
-      newAdminNote.value.url = data.telegram_link
-      
-      const hashText = `\n\n⚖️ 法律證據指紋 (SHA256):\n${data.file_hash}`
-      newAdminNote.value.description = (newAdminNote.value.description || '') + hashText
-
-      uploadStatus.value = '✅ 上傳成功！連結與指紋已自動填入下方表單。'
-    } else {
-      throw new Error(data.error || '未知錯誤')
-    }
-  } catch (error) {
-    console.error('上傳失敗:', error)
-    uploadStatus.value = `❌ 上傳失敗: ${error.message}`
-  } finally {
-    isUploading.value = false
-    event.target.value = '' 
-    setTimeout(() => { if(uploadStatus.value.includes('✅')) uploadStatus.value = '' }, 8000)
-  }
-}
 
 const todosList = ref([])
 const newTodo = ref({ content: '', url: '', due_date: '' })
